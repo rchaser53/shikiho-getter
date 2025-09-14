@@ -1,0 +1,17 @@
+{
+  "name": "shikiho-getter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "fetch": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["shikiho", "stock", "api", "scraper"],
+  "author": "",
+  "license": "ISC",
+  "description": "四季報APIから企業情報を取得してJSONファイルに出力するスクリプト",
+  "dependencies": {
+    "axios": "^1.12.1"
+  }
+}
