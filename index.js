@@ -256,6 +256,231 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// 財務比較テーブルHTMLを生成
+function generateFinancialComparisonTable(companies) {
+  const html = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企業財務比較テーブル</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .update-time {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        .company-name {
+            text-align: left !important;
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        .metric-name {
+            text-align: left !important;
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        .number {
+            text-align: right;
+        }
+        .percentage {
+            color: #0066cc;
+        }
+        .currency {
+            color: #006600;
+        }
+        .negative {
+            color: #cc0000;
+        }
+        .section-header {
+            background-color: #e6f3ff !important;
+            font-weight: bold;
+            text-align: center !important;
+        }
+        .note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 企業財務比較テーブル</h1>
+        <div class="update-time">最終更新: ${new Date().toLocaleString('ja-JP')}</div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-align: left;">項目</th>
+                    ${companies.map(company => `<th>${company.companyName || company.companyId}<br><small>(${company.stockCode})</small></th>`).join('')}
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 基本情報 -->
+                <tr><td colspan="${companies.length + 1}" class="section-header">📈 株価情報</td></tr>
+                <tr>
+                    <td class="metric-name">現在株価（円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.currentPrice)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">時価総額（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.marketCap, 1)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">PER（倍）</td>
+                    ${companies.map(company => `<td class="number">${formatNumber(company.priceEarningsRatio, 2)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">PBR（倍）</td>
+                    ${companies.map(company => `<td class="number">${formatNumber(company.priceBookValueRatio, 2)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">配当利回り（%）</td>
+                    ${companies.map(company => `<td class="number percentage">${formatNumber(company.dividendYield, 2)}</td>`).join('')}
+                </tr>
+                
+                <!-- 業績情報 -->
+                <tr><td colspan="${companies.length + 1}" class="section-header">💼 業績情報（最新実績）</td></tr>
+                <tr>
+                    <td class="metric-name">決算期</td>
+                    ${companies.map(company => `<td class="number">${company.latestResults ? company.latestResults.period : 'N/A'}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">売上高（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.latestResults ? company.latestResults.netSales : null)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">営業利益（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.latestResults ? company.latestResults.operatingIncome : null)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">純利益（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.latestResults ? company.latestResults.netIncome : null)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">1株当たり利益（円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.latestResults ? company.latestResults.earningsPerShare : null, 1)}</td>`).join('')}
+                </tr>
+                
+                <!-- 財務指標 -->
+                <tr><td colspan="${companies.length + 1}" class="section-header">🏦 財務指標</td></tr>
+                <tr>
+                    <td class="metric-name">自己資本比率（%）</td>
+                    ${companies.map(company => `<td class="number percentage">${formatNumber(company.equityRatio, 1)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">ROE（%）</td>
+                    ${companies.map(company => `<td class="number percentage">${formatNumber(company.roe, 1)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">BPS（円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.bookValuePerShare, 0)}</td>`).join('')}
+                </tr>
+                
+                <!-- 東洋経済スコア -->
+                <tr><td colspan="${companies.length + 1}" class="section-header">⭐ 東洋経済スコア</td></tr>
+                <tr>
+                    <td class="metric-name">総合スコア</td>
+                    ${companies.map(company => `<td class="number">${company.tkScore ? company.tkScore.total_score + '/5' : 'N/A'}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">収益性</td>
+                    ${companies.map(company => `<td class="number">${company.tkScore ? company.tkScore.profitability + '/5' : 'N/A'}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">成長性</td>
+                    ${companies.map(company => `<td class="number">${company.tkScore ? company.tkScore.growth_potential + '/5' : 'N/A'}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">安定性</td>
+                    ${companies.map(company => `<td class="number">${company.tkScore ? company.tkScore.stability + '/5' : 'N/A'}</td>`).join('')}
+                </tr>
+                
+                <!-- セクター情報 -->
+                <tr><td colspan="${companies.length + 1}" class="section-header">🏢 セクター情報</td></tr>
+                <tr>
+                    <td class="metric-name">業種</td>
+                    ${companies.map(company => `<td style="text-align: left; font-size: 12px;">${company.sectorName || 'N/A'}</td>`).join('')}
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="note">
+            <strong>注意事項:</strong><br>
+            • データは東洋経済オンライン四季報APIから取得<br>
+            • 「N/A」は該当データが取得できなかったことを示します<br>
+            • 金額は百万円単位で表示（時価総額、売上高、利益等）<br>
+            • PER、PBRは予想ベース<br>
+            • 東洋経済スコアは5段階評価
+        </div>
+    </div>
+</body>
+</html>
+`;
+
+  return html;
+}
+
+// 数値フォーマット関数
+function formatNumber(value, decimals = 0) {
+  if (value === null || value === undefined) {
+    return 'N/A';
+  }
+  
+  if (typeof value === 'string' && (value === 'ー' || value === '-' || value.trim() === '')) {
+    return 'N/A';
+  }
+  
+  const num = parseFloat(value);
+  if (isNaN(num)) {
+    return 'N/A';
+  }
+  
+  if (num < 0) {
+    return `<span class="negative">${num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\.\d))/g, ',')}</span>`;
+  }
+  
+  return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\.\d))/g, ',');
+}
+
 // 出力ディレクトリを作成
 async function ensureOutputDirectory(outputPath) {
   const dir = path.dirname(outputPath);
@@ -312,6 +537,16 @@ async function main() {
     console.log(`\n結果を ${config.outputFile} に保存しました`);
     console.log(`取得成功: ${results.filter(r => !r.error).length}社`);
     console.log(`取得失敗: ${results.filter(r => r.error).length}社`);
+    
+    // 財務比較テーブルHTMLを生成
+    const successfulCompanies = results.filter(r => !r.error);
+    if (successfulCompanies.length > 0) {
+      const htmlTable = generateFinancialComparisonTable(successfulCompanies);
+      const htmlOutputPath = config.outputFile.replace('.json', '_comparison.html');
+      await fs.writeFile(htmlOutputPath, htmlTable, 'utf8');
+      console.log(`財務比較テーブルを ${htmlOutputPath} に保存しました`);
+      console.log('ブラウザで開いて比較表を確認できます');
+    }
     
   } catch (error) {
     console.error('処理中にエラーが発生しました:', error.message);
