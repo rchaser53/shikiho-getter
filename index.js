@@ -138,8 +138,11 @@ function formatCompanyData(rawData, companyId) {
       }
     }
     
-    // BPS（1株純資産）の抽出
+    // BPS（1株純資産）と総資産の計算
     let bookValuePerShare = null;
+    let estimatedTotalAssets = null;
+    let estimatedEquity = null;
+    
     if (rawData.shimen_bps && Array.isArray(rawData.shimen_bps) && rawData.shimen_bps.length >= 3) {
       bookValuePerShare = parseNumber(rawData.shimen_bps[2]);
     }
@@ -147,12 +150,37 @@ function formatCompanyData(rawData, companyId) {
     // 自己資本比率の抽出（rivalsから）
     let equityRatio = null;
     let roe = null;
+    let operatingMargin = null;
+    let netProfitMargin = null;
+    let totalAssets = null;
     if (rawData.rivals && Array.isArray(rawData.rivals) && rawData.rivals.length > 0) {
       const selfCompany = rawData.rivals.find(r => r.stock_code === stockCode);
       if (selfCompany) {
         equityRatio = selfCompany.ratio_of_net_worth ? selfCompany.ratio_of_net_worth * 100 : null; // %に変換
         roe = selfCompany.fyp1_roe;
+        operatingMargin = selfCompany.ratio_of_ope_income_to_net_sales ? selfCompany.ratio_of_ope_income_to_net_sales * 100 : null; // %に変換
+        netProfitMargin = selfCompany.ratio_of_net_income_to_net_sales ? selfCompany.ratio_of_net_income_to_net_sales * 100 : null; // %に変換
       }
+    }
+    
+    // 総資産と自己資本の推定計算
+    if (bookValuePerShare && marketCap && currentPrice && equityRatio && equityRatio > 0) {
+      const estimatedShares = marketCap / currentPrice * 1000; // 発行済み株数の推定（千株）
+      estimatedEquity = bookValuePerShare * estimatedShares / 1000; // 自己資本の推定（百万円）
+      estimatedTotalAssets = estimatedEquity / (equityRatio / 100); // 総資産の推定（百万円）
+    }
+    
+    // 有利子負債の推定（総負債から概算）
+    let estimatedInterestBearingDebt = null;
+    let debtToEquityRatio = null;
+    
+    if (estimatedTotalAssets && estimatedEquity) {
+      const estimatedTotalLiabilities = estimatedTotalAssets - estimatedEquity;
+      // 有利子負債を総負債の約30-60%と仮定（業界により異なる）
+      estimatedInterestBearingDebt = estimatedTotalLiabilities * 0.4; // 概算値
+      
+      // 負債自己資本比率の計算
+      debtToEquityRatio = estimatedTotalLiabilities / estimatedEquity;
     }
     
     // 東洋経済のスコア
@@ -205,6 +233,12 @@ function formatCompanyData(rawData, companyId) {
       // 財務指標
       equityRatio: equityRatio, // 自己資本比率（%）
       roe: roe, // 自己資本利益率
+      operatingMargin: operatingMargin, // 営業利益率（%）
+      netProfitMargin: netProfitMargin, // 純利益率（%）
+      estimatedTotalAssets: estimatedTotalAssets, // 推定総資産（百万円）
+      estimatedEquity: estimatedEquity, // 推定自己資本（百万円）
+      estimatedInterestBearingDebt: estimatedInterestBearingDebt, // 推定有利子負債（百万円）
+      debtToEquityRatio: debtToEquityRatio, // 負債自己資本比率
       
       // セクター情報
       sector: sector,
@@ -411,8 +445,35 @@ function generateFinancialComparisonTable(companies) {
                     ${companies.map(company => `<td class="number percentage">${formatNumber(company.roe, 1)}</td>`).join('')}
                 </tr>
                 <tr>
+                    <td class="metric-name">営業利益率（%）</td>
+                    ${companies.map(company => `<td class="number percentage">${formatNumber(company.operatingMargin, 1)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">純利益率（%）</td>
+                    ${companies.map(company => `<td class="number percentage">${formatNumber(company.netProfitMargin, 1)}</td>`).join('')}
+                </tr>
+                <tr>
                     <td class="metric-name">BPS（円）</td>
                     ${companies.map(company => `<td class="number currency">${formatNumber(company.bookValuePerShare, 0)}</td>`).join('')}
+                </tr>
+                
+                <!-- 推定財務データ -->
+                <tr><td colspan="${companies.length + 1}" class="section-header">📊 推定財務データ</td></tr>
+                <tr>
+                    <td class="metric-name">推定総資産（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.estimatedTotalAssets)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">推定自己資本（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.estimatedEquity)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">推定有利子負債（百万円）</td>
+                    ${companies.map(company => `<td class="number currency">${formatNumber(company.estimatedInterestBearingDebt)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td class="metric-name">負債自己資本比率（倍）</td>
+                    ${companies.map(company => `<td class="number">${formatNumber(company.debtToEquityRatio, 2)}</td>`).join('')}
                 </tr>
                 
                 <!-- 東洋経済スコア -->
@@ -449,7 +510,8 @@ function generateFinancialComparisonTable(companies) {
             • 「N/A」は該当データが取得できなかったことを示します<br>
             • 金額は百万円単位で表示（時価総額、売上高、利益等）<br>
             • PER、PBRは予想ベース<br>
-            • 東洋経済スコアは5段階評価
+            • 東洋経済スコアは5段階評価<br>
+            • <strong>推定財務データは計算による概算値</strong>（総資産=自己資本÷自己資本比率、有利子負債=総負債×40%と仮定）
         </div>
     </div>
 </body>
