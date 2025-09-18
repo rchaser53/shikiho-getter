@@ -13,6 +13,48 @@ async function loadConfig() {
   }
 }
 
+// 既存データファイルを読み込む
+async function loadExistingData(outputFile) {
+  try {
+    const existingData = await fs.readFile(outputFile, 'utf8');
+    const parsed = JSON.parse(existingData);
+    
+    // 企業IDをキーとするマップを作成
+    const existingMap = new Map();
+    if (parsed.companies && Array.isArray(parsed.companies)) {
+      parsed.companies.forEach(company => {
+        if (company.companyId) {
+          existingMap.set(company.companyId, company);
+        }
+      });
+    }
+    
+    console.log(`既存データから ${existingMap.size} 社のデータを読み込みました`);
+    return existingMap;
+  } catch (error) {
+    console.log('既存データファイルが見つからないか、読み込めませんでした。全データを取得します。');
+    return new Map();
+  }
+}
+
+// データが1ヶ月以内に更新されているかチェック
+function isRecentlyUpdated(updatedAt) {
+  if (!updatedAt) return false;
+  
+  const updateDate = new Date(updatedAt);
+  const now = new Date();
+  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30日前
+  
+  const isRecent = updateDate > oneMonthAgo;
+  
+  if (isRecent) {
+    const daysDiff = Math.ceil((now - updateDate) / (1000 * 60 * 60 * 24));
+    console.log(`  最終更新: ${updateDate.toLocaleString('ja-JP')} (${daysDiff}日前)`);
+  }
+  
+  return isRecent;
+}
+
 // 企業データを取得
 async function fetchCompanyData(companyId) {
   const url = `https://api-shikiho.toyokeizai.net/stocks/v1/stocks/${companyId}/latest`;
@@ -566,26 +608,40 @@ async function main() {
     // 出力ディレクトリを確保
     await ensureOutputDirectory(config.outputFile);
     
+    // 既存データを読み込み
+    const existingData = await loadExistingData(config.outputFile);
+    
     const results = [];
+    let skippedCount = 0;
+    let fetchedCount = 0;
     
     // 各企業のデータを順次取得
     for (let i = 0; i < config.companyIds.length; i++) {
       const companyId = config.companyIds[i];
       
-      // データを取得
-      const rawData = await fetchCompanyData(companyId);
-      
-      // データを整形
-      const formattedData = formatCompanyData(rawData, companyId);
-      results.push(formattedData);
+      // 既存データをチェック
+      const existingCompany = existingData.get(companyId);
+      if (existingCompany && isRecentlyUpdated(existingCompany.updatedAt)) {
+        console.log(`企業ID ${companyId} は1ヶ月以内に更新済みです。スキップします。`);
+        results.push(existingCompany);
+        skippedCount++;
+      } else {
+        // データを取得
+        const rawData = await fetchCompanyData(companyId);
+        
+        // データを整形
+        const formattedData = formatCompanyData(rawData, companyId);
+        results.push(formattedData);
+        fetchedCount++;
+        
+        // 最後の企業以外は遅延を挿入
+        if (i < config.companyIds.length - 1) {
+          console.log(`${config.requestInterval}ms 待機中...`);
+          await delay(config.requestInterval);
+        }
+      }
       
       console.log(`進捗: ${i + 1}/${config.companyIds.length} 完了`);
-      
-      // 最後の企業以外は遅延を挿入
-      if (i < config.companyIds.length - 1) {
-        console.log(`${config.requestInterval}ms 待機中...`);
-        await delay(config.requestInterval);
-      }
     }
     
     // 結果をJSONファイルに出力
@@ -597,6 +653,8 @@ async function main() {
     
     await fs.writeFile(config.outputFile, JSON.stringify(outputData, null, 2), 'utf8');
     console.log(`\n結果を ${config.outputFile} に保存しました`);
+    console.log(`新規取得: ${fetchedCount}社`);
+    console.log(`既存データ使用: ${skippedCount}社`);
     console.log(`取得成功: ${results.filter(r => !r.error).length}社`);
     console.log(`取得失敗: ${results.filter(r => r.error).length}社`);
     
@@ -626,6 +684,8 @@ if (require.main === module) {
 
 module.exports = {
   loadConfig,
+  loadExistingData,
+  isRecentlyUpdated,
   fetchCompanyData,
   formatCompanyData,
   main
