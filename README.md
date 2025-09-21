@@ -1,30 +1,38 @@
-# 四季報データ取得スクリプト
+# 四季報データ取得 & Web表示ツール
 
-オンライン四季報のAPIから企業情報を取得してJSONファイルに出力するNode.jsスクリプトです。
+オンライン四季報のAPIから企業情報を取得し、Vue.js + TSXで構築されたWebアプリケーションで表示するプロジェクトです。
 
-## 機能
+## 🚀 機能
 
+### データ取得機能
 - 設定ファイル（config.json）から企業IDのリストを読み込み
-- 四季報APIから以下の情報を取得：
-  - 会社名
-  - 時価総額
-  - 自己資本比率
-  - 株価
-  - PER（株価収益率）
-  - PBR（株価純資産倍率）
-  - 配当利回り
-  - 総資産
-  - 売上高
-  - 営業利益
-  - 純利益
-  - ROE（自己資本利益率）
-  - ROA（総資産利益率）
-- リクエスト間隔の制御（デフォルト0.5秒）
-- エラーハンドリング
-- 取得結果をJSON形式で出力
-- **NEW!** 📊 **財務比較テーブル自動生成** - 全企業の財務指標を見やすいHTML表で比較表示
+- 四季報APIから詳細な企業情報を取得：
+  - 株価情報（現在価格、PER、PBR、配当利回りなど）
+  - 業績情報（売上高、営業利益、純利益など）
+  - 財務指標（自己資本比率、ROE、営業利益率、純利益率など）
+  - 推定財務データ（総資産、自己資本、有利子負債）
+  - 東洋経済スコア（収益性、成長性、安定性）
+- 1ヶ月以内の既存データは再取得をスキップして効率化
+- エラーハンドリングと詳細ログ出力
 
-## 使用方法
+### Webアプリケーション
+- **Vue 3 + TypeScript + TSX** で構築
+- レスポンシブデザイン対応
+- リアルタイムデータ表示
+- 直感的な財務比較テーブル
+- ダークモード対応
+- モダンなUI/UX
+
+## 📋 技術スタック
+
+- **フロントエンド**: Vue 3, TypeScript, TSX
+- **ビルドツール**: Vite
+- **スタイリング**: CSS3 (レスポンシブ, ダークモード)
+- **バックエンド**: Node.js, TypeScript
+- **API**: 東洋経済オンライン四季報API
+- **HTTP Client**: Axios
+
+## 🛠️ セットアップ
 
 ### 1. 依存関係のインストール
 
@@ -40,11 +48,10 @@ npm install
 {
   "companyIds": [
     "1301",
-    "1332",
+    "1332", 
     "4063",
     "6178",
     "6501",
-    "6502",
     "6758",
     "7203",
     "7267",
@@ -58,83 +65,124 @@ npm install
 }
 ```
 
-- `companyIds`: 取得したい企業の証券コードリスト
-- `outputFile`: 出力先ファイルのパス
-- `requestInterval`: リクエスト間隔（ミリ秒）
-
-### 3. スクリプトの実行
+### 3. データ取得
 
 ```bash
-npm start
-# または
-npm run fetch
-# または
-node index.js
+# 四季報APIからデータを取得
+npm run fetch-data
 ```
 
-### 出力例
+### 4. Webアプリケーション起動
 
-**JSON出力:**
+```bash
+# 開発サーバー起動
+npm run dev
+
+# ブラウザで http://localhost:3000 を開く
+```
+
+### 5. 本番ビルド
+
+```bash
+# 本番用ビルド
+npm run build
+
+# ビルド済みアプリのプレビュー
+npm run preview
+```
+
+## 📊 出力データ例
+
+### JSON出力
 ```json
 {
-  "timestamp": "2025-09-14T10:30:00.000Z",
-  "totalCompanies": 13,
+  "timestamp": "2025-09-19T10:30:00.000Z",
+  "totalCompanies": 12,
   "companies": [
     {
       "companyId": "7203",
       "companyName": "トヨタ自動車",
-      "marketCap": 35000000000000,
-      "equityRatio": 45.2,
-      "currentPrice": 2500,
-      "priceEarningsRatio": 12.5,
-      "priceBookValueRatio": 1.2,
-      "dividendYield": 2.8,
-      "latestResults": {
-        "period": "連25.3",
-        "netSales": 30000000000000,
-        "operatingIncome": 2500000000000,
-        "netIncome": 2000000000000
-      },
-      "roe": 8.5,
+      "currentPrice": 2935,
+      "marketCap": 46350390.70137,
+      "equityRatio": 38.38,
+      "roe": 7.79,
+      "operatingMargin": 10.0,
+      "netProfitMargin": 9.9,
+      "estimatedTotalAssets": 113295572,
+      "estimatedEquity": 43483600,
       "tkScore": {
         "total_score": 4,
         "profitability": 5,
         "growth_potential": 5,
         "stability": 2
-      },
-      "updatedAt": "2025-09-14T10:30:15.123Z"
+      }
     }
   ]
 }
 ```
 
-**HTML財務比較表:**
+### Web表示機能
 - 📈 株価情報（現在株価、時価総額、PER、PBR、配当利回り）
-- 📼 業績情報（売上高、営業利益、純利益、1株益）
-- 🏦 財務指標（自己資本比率、ROE、BPS）
+- � 業績情報（売上高、営業利益、純利益、1株益）
+- 🏦 財務指標（自己資本比率、ROE、営業利益率、純利益率、BPS）
+- 📊 推定財務データ（総資産、自己資本、有利子負債、負債自己資本比率）
 - ⭐ 東洋経済スコア（総合、収益性、成長性、安定性）
 - 🏢 セクター情報
 
-## 注意事項
-
-- APIの利用規約を遵守してください
-- 過度なリクエストを避けるため、適切な間隔（デフォルト0.5秒）を設定しています
-- ネットワークエラーやAPIエラーが発生した場合、該当企業のデータはエラー情報が記録されます
-- デバッグ用として生データ（rawData）も保存されます
-
-## ファイル構成
+## 📁 プロジェクト構造
 
 ```
 shikiho-getter/
-├── config.json      # 設定ファイル
-├── index.js         # メインスクリプト
-├── package.json     # プロジェクト設定
-├── output/          # 出力ディレクトリ
-│   ├── companies.json              # JSON形式の企業データ
-│   └── companies_comparison.html   # 財務比較テーブル（HTML）
-└── README.md        # このファイル
+├── src/
+│   ├── components/          # Vue TSXコンポーネント
+│   │   └── FinancialComparisonTable.tsx
+│   ├── composables/         # Vue Composition API
+│   │   └── useCompanyData.ts
+│   ├── services/           # データ取得サービス
+│   │   └── dataFetcher.ts
+│   ├── scripts/           # ユーティリティスクリプト
+│   │   └── fetch-data.ts
+│   ├── types/             # TypeScript型定義
+│   │   └── index.ts
+│   ├── App.tsx            # メインアプリコンポーネント
+│   ├── main.ts           # アプリエントリーポイント
+│   └── style.css         # グローバルスタイル
+├── output/               # 取得データ保存先
+│   ├── companies.json    # JSON形式の企業データ
+│   └── companies_comparison.html  # 静的HTML比較表
+├── config.json          # 設定ファイル
+├── index.html           # HTMLエントリーポイント
+├── vite.config.ts       # Vite設定
+├── tsconfig.json        # TypeScript設定
+└── package.json         # プロジェクト設定
 ```
 
-## ライセンス
+## 🎯 主な改善点
+
+### パフォーマンス
+- 既存データの1ヶ月キャッシュでAPI呼び出しを大幅削減
+- Vue 3のReactivity Systemによる効率的な再描画
+- Viteによる高速な開発・ビルド環境
+
+### 開発体験
+- TypeScriptによる型安全性
+- TSXによる宣言的なUI構築
+- Composition APIによる再利用可能なロジック
+- ESModulesとモダンJavaScript機能
+
+### ユーザビリティ
+- レスポンシブデザイン対応
+- ダークモード対応
+- 直感的なデータ可視化
+- エラー状態とローディング状態の適切な表示
+
+## ⚠️ 注意事項
+
+- データは東洋経済オンライン四季報APIから取得
+- 推定財務データは計算による概算値です
+- APIの利用規約を遵守してください
+- 過度なリクエストを避けるため、適切な間隔を設定しています
+
+## 📄 ライセンス
 
 ISC
