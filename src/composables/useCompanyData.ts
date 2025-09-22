@@ -48,8 +48,12 @@ export function useCompanyData() {
       return 'N/A';
     }
     
+    // 負数の場合の処理
+    const isNegative = num < 0;
+    const absNum = Math.abs(num);
+    
     // 小数点以下の桁数を指定して文字列化
-    const fixedNum = num.toFixed(decimals);
+    const fixedNum = absNum.toFixed(decimals);
     
     // 整数部分と小数部分を分離
     const parts = fixedNum.split('.');
@@ -60,7 +64,10 @@ export function useCompanyData() {
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     
     // 小数部分がある場合は結合
-    return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+    let result = decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+    
+    // 負数の場合はマイナス記号を追加
+    return isNegative ? `-${result}` : result;
   }
   
   return {

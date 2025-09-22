@@ -18,7 +18,22 @@ export interface LatestResults {
   preTaxIncome?: number | null;
   netIncome: number | null;
   earningsPerShare: number | null;
+  dividendPerShare?: number | null;
   pubDate?: string;
+}
+
+// 業績データ行の型定義
+export interface PerformanceRow {
+  period: string;
+  netSales: number | null;
+  operatingIncome: number | null;
+  preTaxIncome: number | null;
+  netIncome: number | null;
+  earningsPerShare: number | null;
+  dividendPerShare: number | null;
+  isActual: boolean; // 実績か予想か
+  isForecast: boolean; // 予想フラグ
+  isQuarterly: boolean; // 四半期データか
 }
 
 export interface CompanyData {
@@ -48,6 +63,7 @@ export interface CompanyData {
   
   // 業績情報
   latestResults: LatestResults | null;
+  performanceData: PerformanceRow[]; // 業績データ配列を追加
   
   // 財務指標
   equityRatio: number | null; // 自己資本比率（%）

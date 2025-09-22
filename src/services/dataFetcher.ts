@@ -2,7 +2,7 @@ import axios from 'axios';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { CompanyData, Config, CompaniesData } from '../types/index.js';
+import type { CompanyData, Config, CompaniesData, PerformanceRow } from '../types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,6 +94,46 @@ function parseNumber(value: any): number | null {
   return isNaN(num) ? null : num;
 }
 
+// shimen_resultsから業績データを解析
+function parsePerformanceData(shimenResults: any[][]): PerformanceRow[] {
+  if (!Array.isArray(shimenResults) || shimenResults.length <= 1) {
+    return [];
+  }
+
+  const performanceData: PerformanceRow[] = [];
+  
+  // ヘッダー行をスキップして、データ行を解析
+  for (let i = 1; i < shimenResults.length; i++) {
+    const row = shimenResults[i];
+    if (!Array.isArray(row) || row.length < 7) continue;
+
+    const period = String(row[0] || '');
+    if (!period) continue;
+
+    // 期間の種類を判定
+    const isForecast = period.includes('予');
+    const isQuarterly = period.includes('〜') || period.includes('四半期') || /\d+\.\d+〜\d+/.test(period);
+    const isActual = !isForecast;
+
+    const performanceRow: PerformanceRow = {
+      period: period,
+      netSales: parseNumber(row[1]),
+      operatingIncome: parseNumber(row[2]),
+      preTaxIncome: parseNumber(row[3]),
+      netIncome: parseNumber(row[4]),
+      earningsPerShare: parseNumber(row[5]),
+      dividendPerShare: parseNumber(row[6]),
+      isActual: isActual,
+      isForecast: isForecast,
+      isQuarterly: isQuarterly
+    };
+
+    performanceData.push(performanceRow);
+  }
+
+  return performanceData;
+}
+
 // データを整形
 export function formatCompanyData(rawData: any, companyId: string): CompanyData {
   if (!rawData) {
@@ -116,6 +156,7 @@ export function formatCompanyData(rawData: any, companyId: string): CompanyData 
       yearHighDate: null,
       yearLowDate: null,
       latestResults: null,
+      performanceData: [], // 空の業績データ配列
       equityRatio: null,
       roe: null,
       operatingMargin: null,
@@ -294,6 +335,9 @@ export function formatCompanyData(rawData: any, companyId: string): CompanyData 
       }
     }
     
+    // 業績データの解析
+    const performanceData = parsePerformanceData(rawData.shimen_results || []);
+    
     return {
       companyId: companyId,
       companyName: companyName,
@@ -320,6 +364,7 @@ export function formatCompanyData(rawData: any, companyId: string): CompanyData 
       
       // 業績情報（最新実績）
       latestResults: latestResults,
+      performanceData: performanceData, // 業績データ配列を追加
       
       // 財務指標
       equityRatio: equityRatio, // 自己資本比率（%）
@@ -372,6 +417,7 @@ export function formatCompanyData(rawData: any, companyId: string): CompanyData 
       yearHighDate: null,
       yearLowDate: null,
       latestResults: null,
+      performanceData: [], // 空の業績データ配列
       equityRatio: null,
       roe: null,
       operatingMargin: null,
