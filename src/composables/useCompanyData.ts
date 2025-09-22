@@ -48,7 +48,19 @@ export function useCompanyData() {
       return 'N/A';
     }
     
-    return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\.\d))/g, ',');
+    // 小数点以下の桁数を指定して文字列化
+    const fixedNum = num.toFixed(decimals);
+    
+    // 整数部分と小数部分を分離
+    const parts = fixedNum.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+    
+    // 整数部分にカンマを挿入（3桁区切り）
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // 小数部分がある場合は結合
+    return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
   }
   
   return {
