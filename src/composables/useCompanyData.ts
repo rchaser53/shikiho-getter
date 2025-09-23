@@ -5,30 +5,63 @@ export function useCompanyData() {
   const companies = ref<CompanyData[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const dataSource = ref<string>('companies.json'); // データソースを管理
   
   // 成功した企業データのみをフィルタ
   const successfulCompanies = computed(() => 
     companies.value.filter((company: CompanyData) => !company.error)
   );
   
-  // データ読み込み
-  async function loadCompanyData() {
+  // データ読み込み（ファイル名指定可能）
+  async function loadCompanyData(fileName = 'companies.json') {
     loading.value = true;
     error.value = null;
+    dataSource.value = fileName;
     
     try {
-      const response = await fetch('/output/companies.json');
+      const response = await fetch(`/output/${fileName}`);
       if (!response.ok) {
-        throw new Error('データの読み込みに失敗しました');
+        throw new Error(`データの読み込みに失敗しました: ${fileName}`);
       }
       
       const data = await response.json();
       companies.value = data.companies || [];
+      console.log(`📊 ${companies.value.length}社のデータを読み込みました (${fileName})`);
     } catch (err) {
       error.value = (err as Error).message;
       console.error('データ読み込みエラー:', err);
     } finally {
       loading.value = false;
+    }
+  }
+  
+  // 利用可能なデータファイル一覧を取得
+  async function getAvailableDataFiles(): Promise<string[]> {
+    try {
+      // 一般的なファイル名をチェック
+      const possibleFiles = [
+        'companies.json',
+        'range-companies.json',
+        'custom-companies.json'
+      ];
+      
+      const availableFiles: string[] = [];
+      
+      for (const fileName of possibleFiles) {
+        try {
+          const response = await fetch(`/output/${fileName}`, { method: 'HEAD' });
+          if (response.ok) {
+            availableFiles.push(fileName);
+          }
+        } catch {
+          // ファイルが存在しない場合はスキップ
+        }
+      }
+      
+      return availableFiles;
+    } catch (error) {
+      console.error('ファイル一覧取得エラー:', error);
+      return ['companies.json']; // デフォルト
     }
   }
   
@@ -75,7 +108,9 @@ export function useCompanyData() {
     successfulCompanies,
     loading,
     error,
+    dataSource,
     loadCompanyData,
+    getAvailableDataFiles,
     formatNumber
   };
 }

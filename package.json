@@ -7,6 +7,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "fetch-data": "tsx src/services/dataFetcher.ts",
+    "fetch-range": "tsx src/scripts/fetch-range.ts",
     "serve": "vite preview --port 3000"
   },
   "dependencies": {

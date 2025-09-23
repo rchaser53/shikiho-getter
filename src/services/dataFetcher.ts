@@ -443,7 +443,7 @@ function delay(ms: number): Promise<void> {
 }
 
 // 出力ディレクトリを作成
-async function ensureOutputDirectory(outputPath: string): Promise<void> {
+export async function ensureOutputDirectory(outputPath: string): Promise<void> {
   const dir = path.dirname(path.resolve(__dirname, '../../', outputPath));
   try {
     await fs.mkdir(dir, { recursive: true });

@@ -27,6 +27,38 @@ body {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  flex-wrap: wrap;
+}
+
+.data-source-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.data-source-selector label {
+  font-weight: bold;
+  color: #495057;
+  font-size: 14px;
+}
+
+.data-source-selector select {
+  padding: 6px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: white;
+  font-size: 13px;
+  min-width: 180px;
+}
+
+.file-info {
+  color: #6c757d;
+  font-size: 12px;
+  font-weight: normal;
 }
 
 .toggle-button {
@@ -38,6 +70,7 @@ body {
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .toggle-button:hover {
@@ -62,6 +95,7 @@ body {
 .company-selector label {
   font-weight: bold;
   color: #555;
+  font-size: 14px;
 }
 
 .company-selector select {
@@ -71,6 +105,68 @@ body {
   background: white;
   font-size: 14px;
   min-width: 200px;
+}
+
+/* データなし画面の改善 */
+.no-data {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.no-data h2 {
+  color: #3498db;
+  margin-bottom: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.help-text {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #3498db;
+}
+
+.help-text code {
+  background: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: #495057;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .control-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .data-source-selector,
+  .company-selector {
+    justify-content: space-between;
+  }
+  
+  .data-source-selector select,
+  .company-selector select {
+    min-width: unset;
+    flex: 1;
+  }
+  
+  .toggle-button {
+    width: 100%;
+  }
 }
 
 /* 業績テーブル */
