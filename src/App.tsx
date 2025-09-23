@@ -8,12 +8,16 @@ export default defineComponent({
   setup() {
     const {
       successfulCompanies,
+      highGrowthCompanies,
+      displayCompanies,
       loading,
       error,
       dataSource,
       loadCompanyData,
       getAvailableDataFiles,
-      formatNumber
+      formatNumber,
+      showHighGrowthOnly,
+      toggleHighGrowthFilter
     } = useCompanyData();
 
     const selectedCompanyIndex = ref(0);
@@ -38,7 +42,7 @@ export default defineComponent({
     };
 
     const selectedCompany = () => {
-      return successfulCompanies.value[selectedCompanyIndex.value] || null;
+      return displayCompanies.value[selectedCompanyIndex.value] || null;
     };
 
     return () => (
@@ -79,7 +83,8 @@ export default defineComponent({
                     ))}
                   </select>
                   <small class="file-info">
-                    ({successfulCompanies.value.length}社のデータ)
+                    ({successfulCompanies.value.length}社のデータ
+                    {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`})
                   </small>
                 </div>
               )}
@@ -92,6 +97,15 @@ export default defineComponent({
                 {showPerformanceDetail.value ? '📊 比較表示に戻る' : '📈 業績詳細を表示'}
               </button>
               
+              {/* 高成長企業フィルタ */}
+              <button 
+                class={`filter-button ${showHighGrowthOnly.value ? 'active' : ''}`}
+                onClick={toggleHighGrowthFilter}
+                title="4年連続増収かつ売上高2倍以上の企業のみ表示"
+              >
+                {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : '🔍 高成長企業フィルタ'}
+              </button>
+              
               {/* 企業選択（業績詳細時のみ） */}
               {showPerformanceDetail.value && (
                 <div class="company-selector">
@@ -100,7 +114,7 @@ export default defineComponent({
                     value={selectedCompanyIndex.value} 
                     onChange={(e) => selectedCompanyIndex.value = parseInt((e.target as HTMLSelectElement).value)}
                   >
-                    {successfulCompanies.value.map((company, index) => (
+                    {displayCompanies.value.map((company, index) => (
                       <option key={company.companyId} value={index}>
                         {company.companyName} ({company.stockCode})
                       </option>
@@ -119,24 +133,30 @@ export default defineComponent({
               />
             ) : (
               <FinancialComparisonTable
-                companies={successfulCompanies.value}
+                companies={displayCompanies.value}
                 formatNumber={formatNumber}
               />
             )}
           </div>
         )}
 
-        {!loading.value && !error.value && successfulCompanies.value.length === 0 && (
+        {!loading.value && !error.value && displayCompanies.value.length === 0 && (
           <div class="no-data">
             <h2>データが見つかりません</h2>
-            <p>企業データを取得してください。</p>
+            <p>{showHighGrowthOnly.value ? '高成長企業の条件を満たす企業がありません。' : '企業データを取得してください。'}</p>
             <div class="action-buttons">
-              <button onClick={() => loadCompanyData()}>データを読み込む</button>
-              <div class="help-text">
-                <p><strong>データ取得方法:</strong></p>
-                <code>npm run fetch-range -- 7000-7100</code><br/>
-                <small>（7000番台を取得する例）</small>
-              </div>
+              {showHighGrowthOnly.value ? (
+                <button onClick={toggleHighGrowthFilter}>全企業を表示</button>
+              ) : (
+                <button onClick={() => loadCompanyData()}>データを読み込む</button>
+              )}
+              {!showHighGrowthOnly.value && (
+                <div class="help-text">
+                  <p><strong>データ取得方法:</strong></p>
+                  <code>npm run fetch-range -- 7000-7100</code><br/>
+                  <small>（7000番台を取得する例）</small>
+                </div>
+              )}
             </div>
           </div>
         )}

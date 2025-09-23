@@ -6,11 +6,24 @@ export function useCompanyData() {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const dataSource = ref<string>('companies.json'); // データソースを管理
+  const showHighGrowthOnly = ref(false); // 高成長企業フィルタ
   
   // 成功した企業データのみをフィルタ
   const successfulCompanies = computed(() => 
     companies.value.filter((company: CompanyData) => !company.error)
   );
+
+  // 高成長企業フィルタ（4年連続増収で売上高2倍以上）
+  const highGrowthCompanies = computed(() => {
+    return successfulCompanies.value.filter(company => {
+      return isHighGrowthCompany(company);
+    });
+  });
+
+  // 表示用の企業データ（フィルタ適用後）
+  const displayCompanies = computed(() => {
+    return showHighGrowthOnly.value ? highGrowthCompanies.value : successfulCompanies.value;
+  });
   
   // データ読み込み（ファイル名指定可能）
   async function loadCompanyData(fileName = 'companies.json') {
@@ -65,6 +78,61 @@ export function useCompanyData() {
     }
   }
   
+  // 高成長企業判定関数（4年連続増収で売上高2倍以上）
+  function isHighGrowthCompany(company: CompanyData): boolean {
+    if (!company.performanceData || company.performanceData.length < 5) {
+      return false; // 最低5年分のデータが必要（比較用）
+    }
+    
+    // 実績データのみを抽出してソート（新しい順）
+    const actualResults = company.performanceData
+      .filter(row => row.isActual && row.netSales !== null && !row.isQuarterly)
+      .sort((a, b) => b.period.localeCompare(a.period))
+      .slice(0, 5); // 最新5年分
+    
+    if (actualResults.length < 5) {
+      return false;
+    }
+    
+    // 4年連続増収チェック（最新年から4年前まで）
+    let consecutiveGrowth = 0;
+    for (let i = 0; i < actualResults.length - 1; i++) {
+      const currentYear = actualResults[i];
+      const previousYear = actualResults[i + 1];
+      
+      if (currentYear.netSales! > previousYear.netSales!) {
+        consecutiveGrowth++;
+      } else {
+        break; // 連続増収が途切れた
+      }
+    }
+    
+    // 4年連続増収チェック
+    if (consecutiveGrowth < 4) {
+      return false;
+    }
+    
+    // 売上高2倍以上チェック（最新年 vs 4年前）
+    const latestSales = actualResults[0].netSales!;
+    const fourYearsAgoSales = actualResults[4].netSales!;
+    
+    if (fourYearsAgoSales <= 0) {
+      return false; // ゼロ除算回避
+    }
+    
+    const growthRatio = latestSales / fourYearsAgoSales;
+    
+    console.log(`📈 ${company.companyName}: ${consecutiveGrowth}年連続増収, 成長率${growthRatio.toFixed(2)}倍`);
+    
+    return growthRatio >= 2.0; // 2倍以上
+  }
+  
+  // フィルタ切り替え関数
+  function toggleHighGrowthFilter() {
+    showHighGrowthOnly.value = !showHighGrowthOnly.value;
+    console.log(`🔍 高成長企業フィルタ: ${showHighGrowthOnly.value ? 'ON' : 'OFF'}`);
+  }
+  
   // 数値フォーマット関数
   function formatNumber(value: number | null, decimals = 0): string {
     if (value === null || value === undefined) {
@@ -106,11 +174,15 @@ export function useCompanyData() {
   return {
     companies,
     successfulCompanies,
+    highGrowthCompanies,
+    displayCompanies,
     loading,
     error,
     dataSource,
     loadCompanyData,
     getAvailableDataFiles,
-    formatNumber
+    formatNumber,
+    showHighGrowthOnly,
+    toggleHighGrowthFilter
   };
 }
