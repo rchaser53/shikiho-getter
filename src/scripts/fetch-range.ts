@@ -105,9 +105,10 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
     existingData = JSON.parse(existingContent);
     
     if (existingData && existingData.companies) {
-      // 既存企業IDのセットを作成
+      // 既存企業IDのセットを作成（stockCode と companyId の両方をチェック）
       existingData.companies.forEach(company => {
         existingCompanyIds.add(company.stockCode);
+        existingCompanyIds.add(company.companyId);
       });
       console.log(`📋 既存データ: ${existingData.companies.length}社 (重複チェック対象)`);
     }
