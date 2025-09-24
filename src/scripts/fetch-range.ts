@@ -46,8 +46,8 @@ function parseArgs() {
           process.exit(1);
         }
         
-        if (end - start > 1000) {
-          console.error(`範囲が大きすぎます (最大1000): ${trimmed}`);
+        if (end - start > 10000) {
+          console.error(`範囲が大きすぎます (最大10000): ${trimmed}`);
           process.exit(1);
         }
         
