@@ -4,6 +4,7 @@ import type { PerformanceRow } from '../types';
 interface Props {
   performanceData: PerformanceRow[];
   companyName: string;
+  stockCode: string;
   formatNumber: (value: number | null, decimals?: number) => string;
 }
 
@@ -15,6 +16,10 @@ export default defineComponent<Props>({
       required: true
     },
     companyName: {
+      type: String,
+      required: true
+    },
+    stockCode: {
       type: String,
       required: true
     },
@@ -58,7 +63,15 @@ export default defineComponent<Props>({
 
     return () => (
       <div class="performance-table-container">
-        <h2>📊 {props.companyName} - 業績推移</h2>
+        <h2>📊 <a 
+          href={`https://shikiho.toyokeizai.net/stocks/${props.stockCode}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="company-link"
+          title={`${props.companyName}の四季報ページを新しいタブで開く`}
+        >
+          {props.companyName}
+        </a> - 業績推移</h2>
         
         <div class="table-wrapper">
           <table class="performance-table">

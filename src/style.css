@@ -436,6 +436,39 @@ button:hover {
   min-width: 120px;
 }
 
+/* 企業名リンクスタイル */
+.company-link {
+  color: inherit;
+  text-decoration: none;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.company-header .company-link {
+  color: inherit;
+  font-weight: bold;
+}
+
+.company-header .company-link:hover {
+  background: rgba(52, 73, 94, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-decoration: underline;
+}
+
+.performance-table-container .company-link {
+  color: #2c3e50;
+  font-weight: normal;
+}
+
+.performance-table-container .company-link:hover {
+  background: rgba(44, 62, 80, 0.1);
+  transform: translateY(-1px);
+  text-decoration: underline;
+}
+
 .metric-name {
   text-align: left !important;
   font-weight: bold;

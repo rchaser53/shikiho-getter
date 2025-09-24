@@ -85,7 +85,15 @@ export default defineComponent<Props>({
                 <th class="company-header">項目</th>
                 {props.companies.map(company => (
                   <th key={company.companyId} class="company-header">
-                    {company.companyName || company.companyId}
+                    <a 
+                      href={`https://shikiho.toyokeizai.net/stocks/${company.stockCode}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="company-link"
+                      title={`${company.companyName}の四季報ページを新しいタブで開く`}
+                    >
+                      {company.companyName || company.companyId}
+                    </a>
                     <br />
                     <small>({company.stockCode})</small>
                   </th>

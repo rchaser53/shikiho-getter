@@ -129,6 +129,7 @@ export default defineComponent({
               <PerformanceTable
                 performanceData={selectedCompany()!.performanceData}
                 companyName={selectedCompany()!.companyName}
+                stockCode={selectedCompany()!.stockCode}
                 formatNumber={formatNumber}
               />
             ) : (
