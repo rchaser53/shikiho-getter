@@ -19,6 +19,11 @@ function parseArgs() {
   npm run fetch-range -- 7372,8411,9984     # 個別指定
   npm run fetch-range -- 7000-7100,8000     # 範囲と個別の組み合わせ
   tsx src/scripts/fetch-range.ts 1000-2000  # 直接実行
+
+📝 重複回避機能:
+  - 既存のrange-companies.jsonがある場合、重複する企業IDは自動的にスキップされます
+  - 新しい企業データのみが追加され、既存データは保持されます
+  - 最終的な出力は企業コード順でソートされます
 `);
     process.exit(1);
   }
@@ -89,18 +94,55 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   // 出力ディレクトリを確保
   await ensureOutputDirectory(outputFile);
   
-  const results = [];
+  // 既存データの読み込み
+  let existingData: CompaniesData | null = null;
+  let existingCompanyIds = new Set<string>();
+  
+  const outputPath = path.resolve(__dirname, '../../', outputFile);
+  
+  try {
+    const existingContent = await fs.readFile(outputPath, 'utf8');
+    existingData = JSON.parse(existingContent);
+    
+    if (existingData && existingData.companies) {
+      // 既存企業IDのセットを作成
+      existingData.companies.forEach(company => {
+        existingCompanyIds.add(company.stockCode);
+      });
+      console.log(`📋 既存データ: ${existingData.companies.length}社 (重複チェック対象)`);
+    }
+  } catch (error) {
+    // ファイルが存在しない場合は新規作成
+    console.log('📄 新規ファイルを作成します');
+  }
+  
+  // 重複除去: 既に存在する企業IDを取得対象から除外
+  const filteredCompanyIds = companyIds.filter(id => !existingCompanyIds.has(id));
+  const duplicateCount = companyIds.length - filteredCompanyIds.length;
+  
+  if (duplicateCount > 0) {
+    console.log(`🔄 重複除外: ${duplicateCount}社（既に取得済み）`);
+  }
+  
+  if (filteredCompanyIds.length === 0) {
+    console.log('✅ 指定された全企業は既に取得済みです。');
+    return existingData;
+  }
+  
+  console.log(`🆕 新規取得対象: ${filteredCompanyIds.length}社`);
+  
+  const results = existingData ? [...existingData.companies] : [];
   const errors = [];
   let successCount = 0;
   let skipCount = 0;
   
   const requestInterval = 500; // 500ms間隔（API負荷軽減）
   
-  for (let i = 0; i < companyIds.length; i++) {
-    const companyId = companyIds[i];
+  for (let i = 0; i < filteredCompanyIds.length; i++) {
+    const companyId = filteredCompanyIds[i];
     
     try {
-      showProgress(i + 1, companyIds.length, companyId, '取得中...');
+      showProgress(i + 1, filteredCompanyIds.length, companyId, '取得中...');
       
       // データを取得
       const rawData = await fetchCompanyData(companyId);
@@ -110,42 +152,45 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
         const formattedData = formatCompanyData(rawData, companyId);
         results.push(formattedData);
         successCount++;
-        showProgress(i + 1, companyIds.length, companyId, `✅ 成功 (${formattedData.companyName})`);
+        showProgress(i + 1, filteredCompanyIds.length, companyId, `✅ 成功 (${formattedData.companyName})`);
       } else {
         skipCount++;
-        showProgress(i + 1, companyIds.length, companyId, '⏭️ スキップ (存在しない)');
+        showProgress(i + 1, filteredCompanyIds.length, companyId, '⏭️ スキップ (存在しない)');
       }
       
     } catch (error) {
       const errorMsg = (error as Error).message;
       errors.push({ companyId, error: errorMsg });
-      showProgress(i + 1, companyIds.length, companyId, `❌ エラー: ${errorMsg}`);
+      showProgress(i + 1, filteredCompanyIds.length, companyId, `❌ エラー: ${errorMsg}`);
     }
     
     // API負荷軽減のため待機（最後以外）
-    if (i < companyIds.length - 1) {
+    if (i < filteredCompanyIds.length - 1) {
       await delay(requestInterval);
     }
   }
   
-  // 結果をJSONファイルに出力
+  // 結果をJSONファイルに出力（既存データとマージ）
   const outputData: CompaniesData = {
     timestamp: new Date().toISOString(),
     totalCompanies: results.length,
-    companies: results
+    companies: results.sort((a, b) => parseInt(a.stockCode) - parseInt(b.stockCode)) // 企業コード順でソート
   };
   
-  const outputPath = path.resolve(__dirname, '../../', outputFile);
   await fs.writeFile(outputPath, JSON.stringify(outputData, null, 2), 'utf8');
   
   // サマリー表示
   console.log('\n' + '='.repeat(60));
   console.log('📊 取得結果サマリー');
   console.log('='.repeat(60));
-  console.log(`✅ 成功: ${successCount}社`);
+  console.log(`✅ 新規取得成功: ${successCount}社`);
   console.log(`⏭️  スキップ: ${skipCount}社 (存在しない銘柄)`);
   console.log(`❌ エラー: ${errors.length}社`);
+  if (duplicateCount > 0) {
+    console.log(`🔄 重複除外: ${duplicateCount}社 (既に取得済み)`);
+  }
   console.log(`📄 出力ファイル: ${outputFile}`);
+  console.log(`📈 総企業数: ${outputData.totalCompanies}社 (既存 + 新規)`);
   
   if (errors.length > 0) {
     console.log('\n❌ エラー詳細:');
@@ -155,13 +200,14 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   }
   
   if (successCount > 0) {
-    console.log('\n🎉 取得成功した企業:');
-    results.slice(0, 10).forEach(company => {
+    console.log('\n🎉 新規取得成功した企業:');
+    const newCompanies = results.slice(-successCount);
+    newCompanies.slice(0, 10).forEach(company => {
       console.log(`  - ${company.stockCode}: ${company.companyName} (${company.sectorName || 'N/A'})`);
     });
     
-    if (results.length > 10) {
-      console.log(`  ... 他${results.length - 10}社`);
+    if (newCompanies.length > 10) {
+      console.log(`  ... 他${newCompanies.length - 10}社`);
     }
   }
   
