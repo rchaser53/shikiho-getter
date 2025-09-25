@@ -509,6 +509,18 @@ export async function fetchAllCompanyData(): Promise<CompaniesData> {
   
   const outputPath = path.resolve(__dirname, '../../', config.outputFile);
   await fs.writeFile(outputPath, JSON.stringify(outputData, null, 2), 'utf8');
+  
+  // public/output/ディレクトリに自動コピー
+  try {
+    const publicOutputDir = path.resolve(__dirname, '../../public/output');
+    await fs.mkdir(publicOutputDir, { recursive: true });
+    const publicOutputPath = path.join(publicOutputDir, path.basename(config.outputFile));
+    await fs.copyFile(outputPath, publicOutputPath);
+    console.log(`📁 public/output/ に自動コピー完了: ${path.basename(config.outputFile)}`);
+  } catch (copyError) {
+    console.warn('⚠️  public/output/へのコピーに失敗:', (copyError as Error).message);
+  }
+  
   console.log(`\n結果を ${config.outputFile} に保存しました`);
   console.log(`新規取得: ${fetchedCount}社`);
   console.log(`既存データ使用: ${skippedCount}社`);

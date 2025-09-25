@@ -180,6 +180,17 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   
   await fs.writeFile(outputPath, JSON.stringify(outputData, null, 2), 'utf8');
   
+  // public/output/ディレクトリに自動コピー
+  try {
+    const publicOutputDir = path.resolve(__dirname, '../../public/output');
+    await fs.mkdir(publicOutputDir, { recursive: true });
+    const publicOutputPath = path.join(publicOutputDir, path.basename(outputFile));
+    await fs.copyFile(outputPath, publicOutputPath);
+    console.log(`📁 public/output/ に自動コピー完了: ${path.basename(outputFile)}`);
+  } catch (copyError) {
+    console.warn('⚠️  public/output/へのコピーに失敗:', (copyError as Error).message);
+  }
+  
   // サマリー表示
   console.log('\n' + '='.repeat(60));
   console.log('📊 取得結果サマリー');
@@ -212,8 +223,10 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
     }
   }
   
-  console.log('\n💡 GUI表示用データの準備完了！');
-  console.log(`   cp -r ${path.dirname(outputFile)} public/ でWebアプリに反映`);
+  console.log('\n💡 Webアプリ用データの準備完了！');
+  console.log(`   📄 出力ファイル: ${outputFile}`);
+  console.log(`   📁 Webアプリ用: public/output/${path.basename(outputFile)}`);
+  console.log(`   🌐 ブラウザでアクセス: npm run dev`);
   
   return outputData;
 }
