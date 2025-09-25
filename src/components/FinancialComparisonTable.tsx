@@ -1,4 +1,4 @@
-import { defineComponent } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted } from 'vue';
 import type { CompanyData } from '../types';
 
 interface Props {
@@ -19,6 +19,95 @@ export default defineComponent<Props>({
     }
   },
   setup(props) {
+    const tableWrapperRef = ref<HTMLElement | null>(null);
+    const scrollProgress = ref(0);
+    
+    // スクロール進捗の更新
+    const updateScrollProgress = () => {
+      if (!tableWrapperRef.value) return;
+      
+      const { scrollLeft, scrollWidth, clientWidth } = tableWrapperRef.value;
+      const maxScroll = scrollWidth - clientWidth;
+      
+      if (maxScroll > 0) {
+        scrollProgress.value = (scrollLeft / maxScroll) * 100;
+      } else {
+        scrollProgress.value = 0;
+      }
+    };
+    
+    // キーボードスクロール制御
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!tableWrapperRef.value) return;
+      
+      const scrollAmount = 200; // スクロール量（ピクセル）
+      const fastScrollAmount = 400; // 高速スクロール量
+      
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          const leftAmount = event.shiftKey ? fastScrollAmount : scrollAmount;
+          tableWrapperRef.value.scrollLeft -= leftAmount;
+          updateScrollProgress();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          const rightAmount = event.shiftKey ? fastScrollAmount : scrollAmount;
+          tableWrapperRef.value.scrollLeft += rightAmount;
+          updateScrollProgress();
+          break;
+        case 'Home':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            tableWrapperRef.value.scrollLeft = 0;
+            updateScrollProgress();
+          }
+          break;
+        case 'End':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            tableWrapperRef.value.scrollLeft = tableWrapperRef.value.scrollWidth;
+            updateScrollProgress();
+          }
+          break;
+        case 'PageLeft':
+        case 'PageUp':
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            tableWrapperRef.value.scrollLeft -= tableWrapperRef.value.clientWidth * 0.8;
+            updateScrollProgress();
+          }
+          break;
+        case 'PageRight':
+        case 'PageDown':
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            tableWrapperRef.value.scrollLeft += tableWrapperRef.value.clientWidth * 0.8;
+            updateScrollProgress();
+          }
+          break;
+      }
+    };
+    
+    // スクロールイベントリスナー
+    const handleScroll = () => {
+      updateScrollProgress();
+    };
+    
+    onMounted(() => {
+      window.addEventListener('keydown', handleKeyDown);
+      if (tableWrapperRef.value) {
+        tableWrapperRef.value.addEventListener('scroll', handleScroll);
+        updateScrollProgress(); // 初期値設定
+      }
+    });
+    
+    onUnmounted(() => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (tableWrapperRef.value) {
+        tableWrapperRef.value.removeEventListener('scroll', handleScroll);
+      }
+    });
     const renderSectionHeader = (title: string, icon: string) => (
       <tr>
         <td colspan={props.companies.length + 1} class="section-header">
@@ -76,9 +165,26 @@ export default defineComponent<Props>({
         <h1>📊 企業財務比較テーブル</h1>
         <div class="update-time">
           最終更新: {new Date().toLocaleString('ja-JP')}
+          <div class="keyboard-help">
+            <small>💡 キーボード操作: ← → スクロール | Shift+← → 高速 | Page↑↓ ページ単位 | Ctrl+Home/End 端まで</small>
+          </div>
         </div>
         
-        <div class="table-wrapper">
+        {/* スクロールプログレスインジケータ */}
+        <div class="scroll-progress-container">
+          <div 
+            class="scroll-progress-bar"
+            style={{ width: `${scrollProgress.value}%` }}
+          ></div>
+        </div>
+        
+        <div 
+          class="table-wrapper" 
+          ref={tableWrapperRef}
+          tabindex="0"
+          role="region"
+          aria-label="企業財務比較テーブル - 左右矢印キーでスクロール可能"
+        >
           <table class="financial-table">
             <thead>
               <tr>
