@@ -503,8 +503,9 @@ export async function fetchAllCompanyData(): Promise<CompaniesData> {
   // 結果をJSONファイルに出力
   const outputData: CompaniesData = {
     timestamp: new Date().toISOString(),
-    totalCompanies: results.length,
-    companies: results
+    // フォールバックやプレースホルダ（companyName === 'N/A'）や存在フラグが0のものは出力しない
+    totalCompanies: results.filter(r => r && r.companyName && r.companyName !== 'N/A' && r.isExist !== '0' && !r.error).length,
+    companies: results.filter(r => r && r.companyName && r.companyName !== 'N/A' && r.isExist !== '0' && !r.error)
   };
   
   const outputPath = path.resolve(__dirname, '../../', config.outputFile);

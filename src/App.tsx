@@ -22,7 +22,7 @@ export default defineComponent({
 
     const selectedCompanyIndex = ref(0);
     const showPerformanceDetail = ref(false);
-    const availableFiles = ref<string[]>(['companies.json']);
+    const availableFiles = ref<string[]>(['range-companies.json']);
 
     onMounted(async () => {
       // 利用可能なデータファイルを取得

@@ -40,7 +40,7 @@ export default defineComponent<Props>({
       return b.period.localeCompare(a.period);
     });
 
-    const renderPeriodCell = (period: string, isActual: boolean, isForecast: boolean) => {
+    const renderPeriodCell = (period: string, isForecast: boolean) => {
       const className = `period-cell ${isForecast ? 'forecast' : 'actual'}`;
       return (
         <td class={className}>
@@ -89,7 +89,7 @@ export default defineComponent<Props>({
             <tbody>
               {sortedData.map((row, index) => (
                 <tr key={`${row.period}-${index}`} class={row.isForecast ? 'forecast-row' : 'actual-row'}>
-                  {renderPeriodCell(row.period, row.isActual, row.isForecast)}
+                  {renderPeriodCell(row.period, row.isForecast)}
                   {renderValueCell(row.netSales, true)}
                   {renderValueCell(row.operatingIncome)}
                   {renderValueCell(row.preTaxIncome)}

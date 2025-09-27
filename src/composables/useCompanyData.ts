@@ -5,7 +5,7 @@ export function useCompanyData() {
   const companies = ref<CompanyData[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const dataSource = ref<string>('companies.json'); // データソースを管理
+  const dataSource = ref<string>('range-companies.json'); // データソースを管理
   const showHighGrowthOnly = ref(false); // 高成長企業フィルタ
   
   // 成功した企業データのみをフィルタ
@@ -26,7 +26,7 @@ export function useCompanyData() {
   });
   
   // データ読み込み（ファイル名指定可能）
-  async function loadCompanyData(fileName = 'companies.json') {
+  async function loadCompanyData(fileName = 'range-companies.json') {
     loading.value = true;
     error.value = null;
     dataSource.value = fileName;
@@ -53,8 +53,8 @@ export function useCompanyData() {
     try {
       // 一般的なファイル名をチェック
       const possibleFiles = [
-        'companies.json',
         'range-companies.json',
+        'companies.json',
         'custom-companies.json'
       ];
       
@@ -74,7 +74,7 @@ export function useCompanyData() {
       return availableFiles;
     } catch (error) {
       console.error('ファイル一覧取得エラー:', error);
-      return ['companies.json']; // デフォルト
+      return ['range-companies.json']; // デフォルト
     }
   }
   

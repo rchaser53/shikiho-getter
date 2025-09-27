@@ -106,11 +106,13 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
     
     if (existingData && existingData.companies) {
       // 既存企業IDのセットを作成（stockCode と companyId の両方をチェック）
-      existingData.companies.forEach(company => {
+      // ただしプレースホルダ的なデータ (companyName === 'N/A' や isExist === '0' や error を含む) は対象外とする
+      const validExisting = existingData.companies.filter(c => c && c.companyName && c.companyName !== 'N/A' && c.isExist !== '0' && !c.error);
+      validExisting.forEach(company => {
         existingCompanyIds.add(company.stockCode);
         existingCompanyIds.add(company.companyId);
       });
-      console.log(`📋 既存データ: ${existingData.companies.length}社 (重複チェック対象)`);
+      console.log(`📋 既存データ: ${validExisting.length}社 (重複チェック対象、プレースホルダは除外)`);
     }
   } catch (error) {
     // ファイルが存在しない場合は新規作成
@@ -151,9 +153,15 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
       if (rawData && rawData.is_exist === '1') {
         // データを整形
         const formattedData = formatCompanyData(rawData, companyId);
-        results.push(formattedData);
-        successCount++;
-        showProgress(i + 1, filteredCompanyIds.length, companyId, `✅ 成功 (${formattedData.companyName})`);
+        // フォールバックやプレースホルダを除外して保存
+        if (formattedData && formattedData.companyName && formattedData.companyName !== 'N/A' && formattedData.isExist !== '0' && !formattedData.error) {
+          results.push(formattedData);
+          successCount++;
+          showProgress(i + 1, filteredCompanyIds.length, companyId, `✅ 成功 (${formattedData.companyName})`);
+        } else {
+          skipCount++;
+          showProgress(i + 1, filteredCompanyIds.length, companyId, '⏭️ スキップ (プレースホルダ/不完全データ)');
+        }
       } else {
         skipCount++;
         showProgress(i + 1, filteredCompanyIds.length, companyId, '⏭️ スキップ (存在しない)');
@@ -172,10 +180,11 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   }
   
   // 結果をJSONファイルに出力（既存データとマージ）
+  const filteredResults = results.filter(r => r && r.companyName && r.companyName !== 'N/A' && r.isExist !== '0' && !r.error);
   const outputData: CompaniesData = {
     timestamp: new Date().toISOString(),
-    totalCompanies: results.length,
-    companies: results.sort((a, b) => parseInt(a.stockCode) - parseInt(b.stockCode)) // 企業コード順でソート
+    totalCompanies: filteredResults.length,
+    companies: filteredResults.sort((a, b) => parseInt(a.stockCode) - parseInt(b.stockCode)) // 企業コード順でソート
   };
   
   await fs.writeFile(outputPath, JSON.stringify(outputData, null, 2), 'utf8');
@@ -196,7 +205,7 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   console.log('📊 取得結果サマリー');
   console.log('='.repeat(60));
   console.log(`✅ 新規取得成功: ${successCount}社`);
-  console.log(`⏭️  スキップ: ${skipCount}社 (存在しない銘柄)`);
+  console.log(`⏭️  スキップ: ${skipCount}社 (存在しないまたはプレースホルダ)`);
   console.log(`❌ エラー: ${errors.length}社`);
   if (duplicateCount > 0) {
     console.log(`🔄 重複除外: ${duplicateCount}社 (既に取得済み)`);
