@@ -2,6 +2,7 @@ import { defineComponent, onMounted, ref } from 'vue';
 import { useCompanyData } from './composables/useCompanyData';
 import FinancialComparisonTable from './components/FinancialComparisonTable';
 import PerformanceTable from './components/PerformanceTable';
+import SettingsModal from './components/SettingsModal';
 
 export default defineComponent({
   name: 'App',
@@ -17,12 +18,17 @@ export default defineComponent({
       getAvailableDataFiles,
       formatNumber,
       showHighGrowthOnly,
-      toggleHighGrowthFilter
+      toggleHighGrowthFilter,
+      updateGrowthSettings,
+      getGrowthSettings,
+      consecutiveGrowthYears,
+      salesGrowthRatio
     } = useCompanyData();
 
     const selectedCompanyIndex = ref(0);
     const showPerformanceDetail = ref(false);
     const availableFiles = ref<string[]>(['range-companies.json']);
+    const showSettingsModal = ref(false);
 
     onMounted(async () => {
       // 利用可能なデータファイルを取得
@@ -43,6 +49,18 @@ export default defineComponent({
 
     const selectedCompany = () => {
       return displayCompanies.value[selectedCompanyIndex.value] || null;
+    };
+
+    const handleOpenSettings = () => {
+      showSettingsModal.value = true;
+    };
+
+    const handleCloseSettings = () => {
+      showSettingsModal.value = false;
+    };
+
+    const handleSaveSettings = (years: number, ratio: number) => {
+      updateGrowthSettings(years, ratio);
     };
 
     return () => (
@@ -101,9 +119,18 @@ export default defineComponent({
               <button 
                 class={`filter-button ${showHighGrowthOnly.value ? 'active' : ''}`}
                 onClick={toggleHighGrowthFilter}
-                title="4年連続増収かつ売上高2倍以上の企業のみ表示"
+                title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上の企業のみ表示`}
               >
-                {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : '🔍 高成長企業フィルタ'}
+                {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍)`}
+              </button>
+              
+              {/* 設定ボタン */}
+              <button 
+                class="settings-button"
+                onClick={handleOpenSettings}
+                title="高成長企業の判定条件を設定"
+              >
+                ⚙️ 設定
               </button>
               
               {/* 企業選択（業績詳細時のみ） */}
@@ -161,6 +188,15 @@ export default defineComponent({
             </div>
           </div>
         )}
+
+        {/* 設定モーダル */}
+        <SettingsModal
+          isVisible={showSettingsModal.value}
+          consecutiveYears={consecutiveGrowthYears.value}
+          growthRatio={salesGrowthRatio.value}
+          onClose={handleCloseSettings}
+          onSave={handleSaveSettings}
+        />
       </div>
     );
   }
