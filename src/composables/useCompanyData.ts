@@ -160,15 +160,6 @@ export function useCompanyData() {
     console.log(`📊 高成長企業設定更新: ${years}年連続増収、売上高${ratio}倍以上${marketCapText}`);
   }
   
-  // 現在の設定を取得
-  function getGrowthSettings() {
-    return {
-      consecutiveYears: consecutiveGrowthYears.value,
-      growthRatio: salesGrowthRatio.value,
-      marketCapLimit: marketCapLimit.value
-    };
-  }
-  
   // 数値フォーマット関数
   function formatNumber(value: number | null, decimals = 0): string {
     if (value === null || value === undefined) {
@@ -221,7 +212,6 @@ export function useCompanyData() {
     showHighGrowthOnly,
     toggleHighGrowthFilter,
     updateGrowthSettings,
-    getGrowthSettings,
     consecutiveGrowthYears,
     salesGrowthRatio,
     marketCapLimit

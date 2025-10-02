@@ -20,7 +20,6 @@ export default defineComponent({
       showHighGrowthOnly,
       toggleHighGrowthFilter,
       updateGrowthSettings,
-      getGrowthSettings,
       consecutiveGrowthYears,
       salesGrowthRatio,
       marketCapLimit

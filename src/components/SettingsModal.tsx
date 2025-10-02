@@ -7,11 +7,6 @@ interface Props {
   marketCapLimit: number | null;
 }
 
-interface Emits {
-  (e: 'close'): void;
-  (e: 'save', years: number, ratio: number, marketCapLimit?: number | null): void;
-}
-
 export default defineComponent({
   name: 'SettingsModal',
   props: {
