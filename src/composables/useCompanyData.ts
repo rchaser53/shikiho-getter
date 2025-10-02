@@ -11,6 +11,7 @@ export function useCompanyData() {
   // 高成長企業の判定条件設定
   const consecutiveGrowthYears = ref(4); // 連続増収年数
   const salesGrowthRatio = ref(2.0); // 売上高成長率（倍）
+  const marketCapLimit = ref<number | null>(null); // 時価総額上限（億円、nullは制限なし）
   
   // 成功した企業データのみをフィルタ
   const successfulCompanies = computed(() => 
@@ -89,6 +90,15 @@ export function useCompanyData() {
       return false; // 最低必要年数分のデータが必要（比較用）
     }
     
+    // 時価総額チェック（設定されている場合）
+    if (marketCapLimit.value !== null && company.marketCap) {
+      // 時価総額が億円単位で設定値を超えている場合は除外
+      const marketCapInOku = company.marketCap / 100; // 百万円を億円に変換
+      if (marketCapInOku > marketCapLimit.value) {
+        return false;
+      }
+    }
+    
     // 実績データのみを抽出してソート（新しい順）
     const actualResults = company.performanceData
       .filter(row => row.isActual && row.netSales !== null && !row.isQuarterly)
@@ -127,7 +137,10 @@ export function useCompanyData() {
     
     const growthRatio = latestSales / comparisonYearSales;
     
-    console.log(`📈 ${company.companyName}: ${consecutiveGrowth}年連続増収, 成長率${growthRatio.toFixed(2)}倍`);
+    const marketCapText = marketCapLimit.value !== null && company.marketCap 
+      ? `, 時価総額${(company.marketCap / 100).toFixed(0)}億円` 
+      : '';
+    console.log(`📈 ${company.companyName}: ${consecutiveGrowth}年連続増収, 成長率${growthRatio.toFixed(2)}倍${marketCapText}`);
     
     return growthRatio >= salesGrowthRatio.value; // 設定された成長率以上
   }
@@ -139,17 +152,20 @@ export function useCompanyData() {
   }
   
   // 高成長企業の設定を更新
-  function updateGrowthSettings(years: number, ratio: number) {
+  function updateGrowthSettings(years: number, ratio: number, marketCapLimitValue?: number | null) {
     consecutiveGrowthYears.value = years;
     salesGrowthRatio.value = ratio;
-    console.log(`📊 高成長企業設定更新: ${years}年連続増収、売上高${ratio}倍以上`);
+    marketCapLimit.value = marketCapLimitValue ?? null;
+    const marketCapText = marketCapLimitValue ? `、時価総額${marketCapLimitValue}億円以下` : '';
+    console.log(`📊 高成長企業設定更新: ${years}年連続増収、売上高${ratio}倍以上${marketCapText}`);
   }
   
   // 現在の設定を取得
   function getGrowthSettings() {
     return {
       consecutiveYears: consecutiveGrowthYears.value,
-      growthRatio: salesGrowthRatio.value
+      growthRatio: salesGrowthRatio.value,
+      marketCapLimit: marketCapLimit.value
     };
   }
   
@@ -207,6 +223,7 @@ export function useCompanyData() {
     updateGrowthSettings,
     getGrowthSettings,
     consecutiveGrowthYears,
-    salesGrowthRatio
+    salesGrowthRatio,
+    marketCapLimit
   };
 }

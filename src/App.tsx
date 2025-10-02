@@ -22,7 +22,8 @@ export default defineComponent({
       updateGrowthSettings,
       getGrowthSettings,
       consecutiveGrowthYears,
-      salesGrowthRatio
+      salesGrowthRatio,
+      marketCapLimit
     } = useCompanyData();
 
     const selectedCompanyIndex = ref(0);
@@ -59,8 +60,8 @@ export default defineComponent({
       showSettingsModal.value = false;
     };
 
-    const handleSaveSettings = (years: number, ratio: number) => {
-      updateGrowthSettings(years, ratio);
+    const handleSaveSettings = (years: number, ratio: number, marketCapLimitValue?: number | null) => {
+      updateGrowthSettings(years, ratio, marketCapLimitValue);
     };
 
     return () => (
@@ -119,9 +120,9 @@ export default defineComponent({
               <button 
                 class={`filter-button ${showHighGrowthOnly.value ? 'active' : ''}`}
                 onClick={toggleHighGrowthFilter}
-                title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上の企業のみ表示`}
+                title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上${marketCapLimit.value ? `かつ時価総額${marketCapLimit.value}億円以下` : ''}の企業のみ表示`}
               >
-                {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍)`}
+                {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍${marketCapLimit.value ? `/${marketCapLimit.value}億円以下` : ''})`}
               </button>
               
               {/* 設定ボタン */}
@@ -194,6 +195,7 @@ export default defineComponent({
           isVisible={showSettingsModal.value}
           consecutiveYears={consecutiveGrowthYears.value}
           growthRatio={salesGrowthRatio.value}
+          marketCapLimit={marketCapLimit.value}
           onClose={handleCloseSettings}
           onSave={handleSaveSettings}
         />

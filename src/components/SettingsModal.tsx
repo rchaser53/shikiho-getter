@@ -4,11 +4,12 @@ interface Props {
   isVisible: boolean;
   consecutiveYears: number;
   growthRatio: number;
+  marketCapLimit: number | null;
 }
 
 interface Emits {
   (e: 'close'): void;
-  (e: 'save', years: number, ratio: number): void;
+  (e: 'save', years: number, ratio: number, marketCapLimit?: number | null): void;
 }
 
 export default defineComponent({
@@ -25,12 +26,18 @@ export default defineComponent({
     growthRatio: {
       type: Number,
       required: true
+    },
+    marketCapLimit: {
+      type: [Number, null] as any,
+      default: null
     }
   },
   emits: ['close', 'save'],
   setup(props: Props, { emit }: { emit: (event: any, ...args: any[]) => void }) {
     const localYears = ref(props.consecutiveYears);
     const localRatio = ref(props.growthRatio);
+    const localMarketCap = ref<number | null>(props.marketCapLimit);
+    const isMarketCapEnabled = ref(props.marketCapLimit !== null);
 
     // propsが変更されたときにローカル値を更新
     watch(() => props.consecutiveYears, (newVal) => {
@@ -39,6 +46,11 @@ export default defineComponent({
     
     watch(() => props.growthRatio, (newVal) => {
       localRatio.value = newVal;
+    });
+
+    watch(() => props.marketCapLimit, (newVal) => {
+      localMarketCap.value = newVal;
+      isMarketCapEnabled.value = newVal !== null;
     });
 
     const handleSave = () => {
@@ -53,7 +65,15 @@ export default defineComponent({
         return;
       }
 
-      emit('save', localYears.value, localRatio.value);
+      if (isMarketCapEnabled.value && localMarketCap.value !== null) {
+        if (localMarketCap.value < 1 || localMarketCap.value > 10000) {
+          alert('時価総額は1億円以上10000億円以下で設定してください');
+          return;
+        }
+      }
+
+      const marketCapValue = isMarketCapEnabled.value ? localMarketCap.value : null;
+      emit('save', localYears.value, localRatio.value, marketCapValue);
       emit('close');
     };
 
@@ -61,12 +81,25 @@ export default defineComponent({
       // 変更を破棄してpropsの値に戻す
       localYears.value = props.consecutiveYears;
       localRatio.value = props.growthRatio;
+      localMarketCap.value = props.marketCapLimit;
+      isMarketCapEnabled.value = props.marketCapLimit !== null;
       emit('close');
     };
 
     const handleReset = () => {
       localYears.value = 4;
       localRatio.value = 2.0;
+      localMarketCap.value = null;
+      isMarketCapEnabled.value = false;
+    };
+
+    const toggleMarketCap = () => {
+      isMarketCapEnabled.value = !isMarketCapEnabled.value;
+      if (!isMarketCapEnabled.value) {
+        localMarketCap.value = null;
+      } else if (localMarketCap.value === null) {
+        localMarketCap.value = 100; // デフォルト100億円
+      }
     };
 
     return () => {
@@ -121,12 +154,50 @@ export default defineComponent({
                   </div>
                   <small class="hint">1.1倍〜10倍の範囲で設定</small>
                 </div>
+
+                <div class="setting-item">
+                  <div class="checkbox-group">
+                    <input
+                      id="market-cap-enabled"
+                      type="checkbox"
+                      checked={isMarketCapEnabled.value}
+                      onChange={toggleMarketCap}
+                      class="checkbox-input"
+                    />
+                    <label for="market-cap-enabled" class="checkbox-label">
+                      💰 時価総額上限を設定する
+                      <span class="setting-description">指定した時価総額以下の企業のみを対象とする</span>
+                    </label>
+                  </div>
+                  {isMarketCapEnabled.value && (
+                    <div class="input-group">
+                      <input
+                        id="market-cap"
+                        type="number"
+                        min="1"
+                        max="10000"
+                        step="1"
+                        v-model={localMarketCap.value}
+                        class="number-input"
+                        placeholder="100"
+                      />
+                      <span class="unit">億円以下</span>
+                    </div>
+                  )}
+                  {isMarketCapEnabled.value && (
+                    <small class="hint">1億円〜10000億円の範囲で設定</small>
+                  )}
+                </div>
               </div>
 
               <div class="preview-section">
                 <h3>📊 設定プレビュー</h3>
                 <div class="preview-text">
-                  <strong>{localYears.value}年連続増収</strong>で<strong>売上高{localRatio.value}倍以上</strong>の企業を高成長企業として判定します
+                  <strong>{localYears.value}年連続増収</strong>で<strong>売上高{localRatio.value}倍以上</strong>
+                  {isMarketCapEnabled.value && localMarketCap.value && (
+                    <>かつ<strong>時価総額{localMarketCap.value}億円以下</strong></>
+                  )}
+                  の企業を高成長企業として判定します
                 </div>
               </div>
             </div>
