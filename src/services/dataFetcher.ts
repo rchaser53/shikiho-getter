@@ -222,7 +222,12 @@ export function formatCompanyData(rawData: any, companyId: string): CompanyData 
     
     if (rawData.modified_forecasts_list_basic && Array.isArray(rawData.modified_forecasts_list_basic)) {
       // 実績データ（result_flag: true）を探す
-      const actualResult = rawData.modified_forecasts_list_basic.find((item: any) => item.result_flag === true);
+      const actualResult = rawData.modified_forecasts_list_basic.reduce((acc: any, item: any) => {
+        if (item.result_flag === true) {
+          acc = item;
+        }
+        return acc;
+      }, null);
       if (actualResult) {
         netSales = parseNumber(actualResult.net_sales);
         operatingIncome = parseNumber(actualResult.ope_income);
