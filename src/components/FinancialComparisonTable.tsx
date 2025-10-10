@@ -1,4 +1,4 @@
-import { defineComponent, ref, onMounted, onUnmounted } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted, computed } from 'vue';
 import type { CompanyData } from '../types';
 
 interface Props {
@@ -21,6 +21,15 @@ export default defineComponent<Props>({
   setup(props) {
     const tableWrapperRef = ref<HTMLElement | null>(null);
     const scrollProgress = ref(0);
+    
+    // companyNameが"N/A"でない有効な企業のみをフィルタ
+    const validCompanies = computed(() => {
+      return props.companies.filter(company => 
+        company.companyName && 
+        company.companyName !== 'N/A' && 
+        company.companyName.trim() !== ''
+      );
+    });
     
     // スクロール進捗の更新
     const updateScrollProgress = () => {
@@ -110,7 +119,7 @@ export default defineComponent<Props>({
     });
     const renderSectionHeader = (title: string, icon: string) => (
       <tr>
-        <td colspan={props.companies.length + 1} class="section-header">
+        <td colspan={validCompanies.value.length + 1} class="section-header">
           {icon} {title}
         </td>
       </tr>
@@ -124,7 +133,7 @@ export default defineComponent<Props>({
     ) => (
       <tr>
         <td class="metric-name">{name}</td>
-        {props.companies.map(company => (
+        {validCompanies.value.map(company => (
           <td key={company.companyId} class={`${cssClass} ${getValue(company) !== null && getValue(company)! < 0 ? 'negative' : ''}`}>
             {props.formatNumber(getValue(company), decimals)}
           </td>
@@ -138,7 +147,7 @@ export default defineComponent<Props>({
     ) => (
       <tr>
         <td class="metric-name">{name}</td>
-        {props.companies.map(company => (
+        {validCompanies.value.map(company => (
           <td key={company.companyId} class="text-cell">
             {getValue(company) || 'N/A'}
           </td>
@@ -152,7 +161,7 @@ export default defineComponent<Props>({
     ) => (
       <tr>
         <td class="metric-name">{name}</td>
-        {props.companies.map(company => (
+        {validCompanies.value.map(company => (
           <td key={company.companyId} class="number">
             {company.tkScore && getScore(company) !== null ? `${getScore(company)}/5` : 'N/A'}
           </td>
@@ -189,7 +198,7 @@ export default defineComponent<Props>({
             <thead>
               <tr>
                 <th class="company-header">項目</th>
-                {props.companies.map(company => (
+                {validCompanies.value.map(company => (
                   <th key={company.companyId} class="company-header">
                     <a 
                       href={`https://shikiho.toyokeizai.net/stocks/${company.stockCode}`}
