@@ -25,7 +25,8 @@ async function main() {
   const outPath = path.join(HISTORY_DIR, `${yyyyMMdd}.json`);
 
   const companiesRaw = JSON.parse(fs.readFileSync(COMPANIES_PATH, 'utf-8'));
-  const stockCodes = companiesRaw.map((c: any) => c.stockCode || c.stock_code).filter(Boolean);
+  const companies = companiesRaw.companies || companiesRaw;
+  const stockCodes = companies.map((c: any) => c.stockCode || c.stock_code).filter(Boolean);
 
   const results: any[] = [];
   for (const code of stockCodes) {
