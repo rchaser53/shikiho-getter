@@ -10,6 +10,7 @@ export default defineComponent({
     const {
       successfulCompanies,
       highGrowthCompanies,
+      trendChangeCompanies,
       displayCompanies,
       loading,
       error,
@@ -18,7 +19,10 @@ export default defineComponent({
       getAvailableDataFiles,
       formatNumber,
       showHighGrowthOnly,
+      showTrendChangeOnly,
       toggleHighGrowthFilter,
+      toggleTrendChangeFilter,
+      loadTrendChangeData,
       updateGrowthSettings,
       consecutiveGrowthYears,
       salesGrowthRatio,
@@ -36,6 +40,16 @@ export default defineComponent({
       
       // デフォルトデータを読み込み
       await loadCompanyData();
+      
+      // トレンド変化データを読み込み
+      try {
+        const { detectTrendChanges } = await import('./services/trendAnalyzer');
+        const changes = await detectTrendChanges(7);
+        const stockCodes = changes.map(c => c.stock_code);
+        loadTrendChangeData(stockCodes);
+      } catch (err) {
+        console.warn('トレンドデータの読み込みに失敗しました:', err);
+      }
     });
 
     const togglePerformanceDetail = () => {
@@ -102,7 +116,8 @@ export default defineComponent({
                   </select>
                   <small class="file-info">
                     ({successfulCompanies.value.length}社のデータ
-                    {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`})
+                    {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`}
+                    {showTrendChangeOnly.value && ` | トレンド変化: ${trendChangeCompanies.value.length}社`})
                   </small>
                 </div>
               )}
@@ -122,6 +137,15 @@ export default defineComponent({
                 title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上${marketCapLimit.value ? `かつ時価総額${marketCapLimit.value}億円以下` : ''}の企業のみ表示`}
               >
                 {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍${marketCapLimit.value ? `/${marketCapLimit.value}億円以下` : ''})`}
+              </button>
+              
+              {/* 200日線トレンド変化フィルタ */}
+              <button 
+                class={`filter-button ${showTrendChangeOnly.value ? 'active' : ''}`}
+                onClick={toggleTrendChangeFilter}
+                title="直近1週間で200日移動平均線の比率が2%以上変化した企業のみ表示"
+              >
+                {showTrendChangeOnly.value ? '📈 トレンド変化企業のみ' : '📊 200日線トレンド変化フィルタ'}
               </button>
               
               {/* 設定ボタン */}
@@ -171,9 +195,15 @@ export default defineComponent({
         {!loading.value && !error.value && displayCompanies.value.length === 0 && (
           <div class="no-data">
             <h2>データが見つかりません</h2>
-            <p>{showHighGrowthOnly.value ? '高成長企業の条件を満たす企業がありません。' : '企業データを取得してください。'}</p>
+            <p>
+              {showTrendChangeOnly.value ? '直近1週間でトレンド変化した企業がありません。履歴データが不足している可能性があります。' :
+               showHighGrowthOnly.value ? '高成長企業の条件を満たす企業がありません。' : 
+               '企業データを取得してください。'}
+            </p>
             <div class="action-buttons">
-              {showHighGrowthOnly.value ? (
+              {showTrendChangeOnly.value ? (
+                <button onClick={toggleTrendChangeFilter}>全企業を表示</button>
+              ) : showHighGrowthOnly.value ? (
                 <button onClick={toggleHighGrowthFilter}>全企業を表示</button>
               ) : (
                 <button onClick={() => loadCompanyData()}>データを読み込む</button>

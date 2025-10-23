@@ -7,11 +7,15 @@ export function useCompanyData() {
   const error = ref<string | null>(null);
   const dataSource = ref<string>('range-companies.json'); // データソースを管理
   const showHighGrowthOnly = ref(false); // 高成長企業フィルタ
+  const showTrendChangeOnly = ref(false); // 200日線トレンド変化企業フィルタ
   
   // 高成長企業の判定条件設定
   const consecutiveGrowthYears = ref(4); // 連続増収年数
   const salesGrowthRatio = ref(2.0); // 売上高成長率（倍）
   const marketCapLimit = ref<number | null>(null); // 時価総額上限（億円、nullは制限なし）
+  
+  // トレンド変化した企業のstockCodeリスト
+  const trendChangedStockCodes = ref<string[]>([]);
   
   // 成功した企業データのみをフィルタ
   const successfulCompanies = computed(() => 
@@ -25,8 +29,22 @@ export function useCompanyData() {
     });
   });
 
+  // 200日線トレンド変化企業フィルタ
+  const trendChangeCompanies = computed(() => {
+    if (trendChangedStockCodes.value.length === 0) {
+      return [];
+    }
+    const codesSet = new Set(trendChangedStockCodes.value);
+    return successfulCompanies.value.filter(company => 
+      codesSet.has(company.stockCode)
+    );
+  });
+
   // 表示用の企業データ（フィルタ適用後）
   const displayCompanies = computed(() => {
+    if (showTrendChangeOnly.value) {
+      return trendChangeCompanies.value;
+    }
     return showHighGrowthOnly.value ? highGrowthCompanies.value : successfulCompanies.value;
   });
   
@@ -148,7 +166,25 @@ export function useCompanyData() {
   // フィルタ切り替え関数
   function toggleHighGrowthFilter() {
     showHighGrowthOnly.value = !showHighGrowthOnly.value;
+    if (showHighGrowthOnly.value) {
+      showTrendChangeOnly.value = false; // 他のフィルタをオフ
+    }
     console.log(`🔍 高成長企業フィルタ: ${showHighGrowthOnly.value ? 'ON' : 'OFF'}`);
+  }
+  
+  // トレンド変化フィルタ切り替え関数
+  function toggleTrendChangeFilter() {
+    showTrendChangeOnly.value = !showTrendChangeOnly.value;
+    if (showTrendChangeOnly.value) {
+      showHighGrowthOnly.value = false; // 他のフィルタをオフ
+    }
+    console.log(`📈 200日線トレンド変化フィルタ: ${showTrendChangeOnly.value ? 'ON' : 'OFF'}`);
+  }
+  
+  // トレンド変化データをロード
+  function loadTrendChangeData(stockCodes: string[]) {
+    trendChangedStockCodes.value = stockCodes;
+    console.log(`📊 トレンド変化企業: ${stockCodes.length}社`);
   }
   
   // 高成長企業の設定を更新
@@ -202,6 +238,7 @@ export function useCompanyData() {
     companies,
     successfulCompanies,
     highGrowthCompanies,
+    trendChangeCompanies,
     displayCompanies,
     loading,
     error,
@@ -210,7 +247,10 @@ export function useCompanyData() {
     getAvailableDataFiles,
     formatNumber,
     showHighGrowthOnly,
+    showTrendChangeOnly,
     toggleHighGrowthFilter,
+    toggleTrendChangeFilter,
+    loadTrendChangeData,
     updateGrowthSettings,
     consecutiveGrowthYears,
     salesGrowthRatio,
