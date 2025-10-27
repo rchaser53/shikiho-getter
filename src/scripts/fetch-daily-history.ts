@@ -7,6 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const COMPANIES_PATH = path.resolve(__dirname, '../../output/range-companies.json');
+const SELECTED_STOCKS_PATH = path.resolve(__dirname, '../../output/selected-stocks.json');
 const HISTORY_DIR = path.resolve(__dirname, '../../output/history');
 const API_URL = 'https://api-shikiho.toyokeizai.net/stocks/v1/stocks';
 
@@ -24,9 +25,20 @@ async function main() {
   const yyyyMMdd = today.toISOString().slice(0, 10);
   const outPath = path.join(HISTORY_DIR, `${yyyyMMdd}.json`);
 
-  const companiesRaw = JSON.parse(fs.readFileSync(COMPANIES_PATH, 'utf-8'));
-  const companies = companiesRaw.companies || companiesRaw;
-  const stockCodes = companies.map((c: any) => c.stockCode || c.stock_code).filter(Boolean);
+  let stockCodes: string[] = [];
+  
+  // selected-stocks.jsonがあればそちらを優先
+  if (fs.existsSync(SELECTED_STOCKS_PATH)) {
+    console.log('📌 selected-stocks.jsonから銘柄リストを読み込みます...');
+    stockCodes = JSON.parse(fs.readFileSync(SELECTED_STOCKS_PATH, 'utf-8'));
+    console.log(`✅ ${stockCodes.length}銘柄を対象にします`);
+  } else {
+    console.log('📊 range-companies.jsonから全銘柄を読み込みます...');
+    const companiesRaw = JSON.parse(fs.readFileSync(COMPANIES_PATH, 'utf-8'));
+    const companies = companiesRaw.companies || companiesRaw;
+    stockCodes = companies.map((c: any) => c.stockCode || c.stock_code).filter(Boolean);
+    console.log(`✅ ${stockCodes.length}銘柄を対象にします`);
+  }
 
   const results: any[] = [];
   for (const code of stockCodes) {

@@ -8,14 +8,21 @@
     "preview": "vite preview",
     "fetch-data": "tsx src/services/dataFetcher.ts",
     "fetch-range": "tsx src/scripts/fetch-range.ts",
+    "fetch-daily-history": "tsx src/scripts/fetch-daily-history.ts",
+    "fetch-daily-history-quick": "tsx src/scripts/fetch-daily-history-quick.ts",
+    "api-server": "tsx src/scripts/save-selected-stocks-api.ts",
     "serve": "vite preview --port 3000"
   },
   "dependencies": {
     "vue": "^3.4.0",
-    "axios": "^1.12.1"
+    "axios": "^1.12.1",
+    "express": "^4.18.0",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/express": "^4.17.0",
+    "@types/cors": "^2.8.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "@vitejs/plugin-vue-jsx": "^4.0.0",
     "typescript": "^5.0.0",

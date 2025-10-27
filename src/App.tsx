@@ -34,6 +34,25 @@ export default defineComponent({
     const availableFiles = ref<string[]>(['range-companies.json']);
     const showSettingsModal = ref(false);
 
+     // 表示中の銘柄を保存する関数
+     const handleSaveSelectedStocks = async () => {
+       const stockCodes = displayCompanies.value.map(c => c.stockCode);
+       try {
+         const response = await fetch('http://localhost:3001/api/save-selected-stocks', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(stockCodes)
+         });
+         const result = await response.json();
+         if (result.success) {
+           alert(`✅ ${result.count}銘柄を保存しました！`);
+         } else {
+           alert('保存に失敗しました');
+         }
+       } catch (err) {
+         alert('保存に失敗しました。APIサーバーが起動しているか確認してください。\n実行コマンド: npm run api-server');
+       }
+     };
     onMounted(async () => {
       // 利用可能なデータファイルを取得
       availableFiles.value = await getAvailableDataFiles();
@@ -155,6 +174,15 @@ export default defineComponent({
                 title="高成長企業の判定条件を設定"
               >
                 ⚙️ 設定
+              </button>
+              
+              {/* 追加: 表示中の銘柄を保存 */}
+              <button 
+                class="save-selected-stocks-button"
+                onClick={handleSaveSelectedStocks}
+                title="表示中の銘柄コードをselected-stocks.jsonに保存"
+              >
+                💾 表示中の銘柄を保存
               </button>
               
               {/* 企業選択（業績詳細時のみ） */}
