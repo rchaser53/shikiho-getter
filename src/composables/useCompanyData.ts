@@ -7,7 +7,7 @@ export function useCompanyData() {
   const error = ref<string | null>(null);
   const dataSource = ref<string>('range-companies.json'); // データソースを管理
   const showHighGrowthOnly = ref(false); // 高成長企業フィルタ
-  const showTrendChangeOnly = ref(false); // 200日線トレンド変化企業フィルタ
+  const showTrendChangeOnly = ref(false); // 200日線プラス銘柄フィルタ
   
   // 高成長企業の判定条件設定
   const consecutiveGrowthYears = ref(4); // 連続増収年数
@@ -29,7 +29,7 @@ export function useCompanyData() {
     });
   });
 
-  // 200日線トレンド変化企業フィルタ
+  // 200日線プラス銘柄フィルタ（200日移動平均線より株価が上の銘柄）
   const trendChangeCompanies = computed(() => {
     if (trendChangedStockCodes.value.length === 0) {
       return [];
@@ -178,13 +178,13 @@ export function useCompanyData() {
     if (showTrendChangeOnly.value) {
       showHighGrowthOnly.value = false; // 他のフィルタをオフ
     }
-    console.log(`📈 200日線トレンド変化フィルタ: ${showTrendChangeOnly.value ? 'ON' : 'OFF'}`);
+    console.log(`📈 200日線プラスフィルタ: ${showTrendChangeOnly.value ? 'ON' : 'OFF'}`);
   }
   
   // トレンド変化データをロード
   function loadTrendChangeData(stockCodes: string[]) {
     trendChangedStockCodes.value = stockCodes;
-    console.log(`📊 トレンド変化企業: ${stockCodes.length}社`);
+    console.log(`📊 200日線プラス銘柄: ${stockCodes.length}社`);
   }
   
   // 高成長企業の設定を更新

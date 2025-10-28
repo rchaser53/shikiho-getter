@@ -136,7 +136,7 @@ export default defineComponent({
                   <small class="file-info">
                     ({successfulCompanies.value.length}社のデータ
                     {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`}
-                    {showTrendChangeOnly.value && ` | トレンド変化: ${trendChangeCompanies.value.length}社`})
+                    {showTrendChangeOnly.value && ` | 200日線プラス: ${trendChangeCompanies.value.length}社`})
                   </small>
                 </div>
               )}
@@ -158,13 +158,13 @@ export default defineComponent({
                 {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍${marketCapLimit.value ? `/${marketCapLimit.value}億円以下` : ''})`}
               </button>
               
-              {/* 200日線トレンド変化フィルタ */}
+              {/* 200日線プラスフィルタ */}
               <button 
                 class={`filter-button ${showTrendChangeOnly.value ? 'active' : ''}`}
                 onClick={toggleTrendChangeFilter}
-                title="直近1週間で200日移動平均線の比率が2%以上変化した企業のみ表示"
+                title="200日移動平均線より株価が上にある企業のみ表示（ratio_of_price_to_200days_ma > 0）"
               >
-                {showTrendChangeOnly.value ? '📈 トレンド変化企業のみ' : '📊 200日線トレンド変化フィルタ'}
+                {showTrendChangeOnly.value ? '📈 200日線プラス銘柄のみ' : '📊 200日線プラスフィルタ'}
               </button>
               
               {/* 設定ボタン */}
@@ -224,7 +224,7 @@ export default defineComponent({
           <div class="no-data">
             <h2>データが見つかりません</h2>
             <p>
-              {showTrendChangeOnly.value ? '直近1週間でトレンド変化した企業がありません。履歴データが不足している可能性があります。' :
+              {showTrendChangeOnly.value ? '200日移動平均線より株価が上にある銘柄がありません。履歴データが不足している可能性があります。' :
                showHighGrowthOnly.value ? '高成長企業の条件を満たす企業がありません。' : 
                '企業データを取得してください。'}
             </p>

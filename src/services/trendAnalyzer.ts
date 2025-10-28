@@ -79,80 +79,55 @@ async function getComparisonFiles(daysAgo: number = 7): Promise<{ oldFile: strin
 }
 
 /**
- * 1週間前と最新のデータを比較し、200日線比率が変化した企業を抽出
+ * 最新のデータから200日線比率がプラスの企業を抽出
  */
-export async function detectTrendChanges(daysAgo: number = 7): Promise<TrendChange[]> {
+export async function detectTrendChanges(_daysAgo: number = 7): Promise<TrendChange[]> {
   try {
-    console.log(`🔍 ${daysAgo}日前とのトレンド変化を検出中...`);
-    const { oldFile, newFile } = await getComparisonFiles(daysAgo);
-
-    if (!oldFile || !newFile) {
+    console.log(`🔍 200日線比率がプラスの銘柄を抽出中...`);
+    
+    // 最新の履歴ファイルを取得
+    const files = await getHistoryFiles();
+    if (files.length === 0) {
       console.warn('⚠️ 履歴データが不足しています。履歴ファイルを生成してください。');
       console.log('実行コマンド: npm run fetch-daily-history-quick');
       return [];
     }
 
-    console.log(`📅 比較対象: ${oldFile} vs ${newFile}`);
+    const latestFile = files[files.length - 1];
+    console.log(`📅 対象ファイル: ${latestFile}`);
 
-    const [oldResponse, newResponse] = await Promise.all([
-      fetch(`/output/history/${oldFile}`),
-      fetch(`/output/history/${newFile}`)
-    ]);
-
-    if (!oldResponse.ok || !newResponse.ok) {
-      console.error(`❌ 履歴データの読み込みに失敗: ${oldFile}(${oldResponse.status}), ${newFile}(${newResponse.status})`);
+    const response = await fetch(`/output/history/${latestFile}`);
+    if (!response.ok) {
+      console.error(`❌ 履歴データの読み込みに失敗: ${latestFile}(${response.status})`);
       return [];
     }
 
-    const oldData: HistoryRecord[] = await oldResponse.json();
-    const newData: HistoryRecord[] = await newResponse.json();
-    
-    console.log(`📊 データ件数: 過去=${oldData.length}社, 最新=${newData.length}社`);
+    const data: HistoryRecord[] = await response.json();
+    console.log(`📊 データ件数: ${data.length}社`);
 
-    // stock_codeでマップ化
-    const oldMap = new Map<string, HistoryRecord>();
-    oldData.forEach(r => oldMap.set(r.stock_code, r));
+    const results: TrendChange[] = [];
 
-    const changes: TrendChange[] = [];
+    for (const record of data) {
+      const ratio = record.ratio_of_price_to_200days_ma;
 
-    for (const newRecord of newData) {
-      const oldRecord = oldMap.get(newRecord.stock_code);
-      if (!oldRecord) continue;
-
-      const oldRatio = oldRecord.ratio_of_price_to_200days_ma;
-      const newRatio = newRecord.ratio_of_price_to_200days_ma;
-
-      // 両方ともnullの場合はスキップ
-      if (oldRatio == null && newRatio == null) continue;
-
-      const change = (newRatio != null && oldRatio != null) 
-        ? newRatio - oldRatio 
-        : null;
-
-      let trend_direction: 'up' | 'down' | 'neutral' = 'neutral';
-      if (change != null) {
-        if (change > 0.02) trend_direction = 'up';      // 2%以上上昇
-        else if (change < -0.02) trend_direction = 'down'; // 2%以上下降
-      }
-
-      // 変化があった企業のみ抽出
-      if (trend_direction !== 'neutral') {
-        changes.push({
-          stock_code: newRecord.stock_code,
-          company_name: newRecord.company_name,
-          old_ratio: oldRatio,
-          new_ratio: newRatio,
-          change,
-          trend_direction
+      // ratio_of_price_to_200days_maがプラス（0より大きい）の銘柄のみ抽出
+      if (ratio != null && ratio > 0) {
+        results.push({
+          stock_code: record.stock_code,
+          company_name: record.company_name,
+          old_ratio: null,
+          new_ratio: ratio,
+          change: null,
+          trend_direction: 'up'
         });
       }
     }
 
-    console.log(`✅ トレンド変化検出完了: ${changes.length}社`);
-    if (changes.length > 0) {
-      console.table(changes.slice(0, 5)); // 上位5社を表示
+    console.log(`✅ トレンド変化検出完了: ${results.length}社`);
+    if (results.length > 0) {
+      console.table(results.slice(0, 5)); // 上位5社を表示
     }
-    return changes;
+    return results;
   } catch (error) {
     console.error('❌ トレンド変化検出エラー:', error);
     if (error instanceof Error) {
