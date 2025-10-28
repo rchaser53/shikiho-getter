@@ -20,9 +20,7 @@ interface TrendChange {
  */
 async function getHistoryFiles(): Promise<string[]> {
   try {
-    // output/historyディレクトリ内のファイル一覧を取得
-    // 実際の実装では、サーバーからファイル一覧を取得するAPIが必要
-    // ここでは簡易的に日付範囲をチェックする実装
+    console.log('📂 履歴ファイルを検索中...');
     const files: string[] = [];
     const today = new Date();
     
@@ -34,18 +32,21 @@ async function getHistoryFiles(): Promise<string[]> {
       const fileName = `${dateStr}.json`;
       
       try {
-        const response = await fetch(`/output/history/${fileName}`, { method: 'HEAD' });
+        // GETリクエストで実際にファイルを取得して存在を確認
+        const response = await fetch(`/output/history/${fileName}`);
         if (response.ok) {
           files.push(fileName);
+          console.log(`✅ 見つかりました: ${fileName}`);
         }
-      } catch {
+      } catch (err) {
         // ファイルが存在しない場合はスキップ
       }
     }
     
+    console.log(`📊 合計${files.length}個の履歴ファイルを発見`);
     return files.sort();
   } catch (error) {
-    console.error('履歴ファイル一覧取得エラー:', error);
+    console.error('❌ 履歴ファイル一覧取得エラー:', error);
     return [];
   }
 }
@@ -81,26 +82,32 @@ async function getComparisonFiles(daysAgo: number = 7): Promise<{ oldFile: strin
  * 1週間前と最新のデータを比較し、200日線比率が変化した企業を抽出
  */
 export async function detectTrendChanges(daysAgo: number = 7): Promise<TrendChange[]> {
-  const { oldFile, newFile } = await getComparisonFiles(daysAgo);
-
-  if (!oldFile || !newFile) {
-    console.warn('履歴データが不足しています');
-    return [];
-  }
-
   try {
+    console.log(`🔍 ${daysAgo}日前とのトレンド変化を検出中...`);
+    const { oldFile, newFile } = await getComparisonFiles(daysAgo);
+
+    if (!oldFile || !newFile) {
+      console.warn('⚠️ 履歴データが不足しています。履歴ファイルを生成してください。');
+      console.log('実行コマンド: npm run fetch-daily-history-quick');
+      return [];
+    }
+
+    console.log(`📅 比較対象: ${oldFile} vs ${newFile}`);
+
     const [oldResponse, newResponse] = await Promise.all([
       fetch(`/output/history/${oldFile}`),
       fetch(`/output/history/${newFile}`)
     ]);
 
     if (!oldResponse.ok || !newResponse.ok) {
-      console.warn('履歴データの読み込みに失敗しました');
+      console.error(`❌ 履歴データの読み込みに失敗: ${oldFile}(${oldResponse.status}), ${newFile}(${newResponse.status})`);
       return [];
     }
 
     const oldData: HistoryRecord[] = await oldResponse.json();
     const newData: HistoryRecord[] = await newResponse.json();
+    
+    console.log(`📊 データ件数: 過去=${oldData.length}社, 最新=${newData.length}社`);
 
     // stock_codeでマップ化
     const oldMap = new Map<string, HistoryRecord>();
@@ -141,9 +148,16 @@ export async function detectTrendChanges(daysAgo: number = 7): Promise<TrendChan
       }
     }
 
+    console.log(`✅ トレンド変化検出完了: ${changes.length}社`);
+    if (changes.length > 0) {
+      console.table(changes.slice(0, 5)); // 上位5社を表示
+    }
     return changes;
   } catch (error) {
-    console.error('トレンド変化検出エラー:', error);
+    console.error('❌ トレンド変化検出エラー:', error);
+    if (error instanceof Error) {
+      console.error('エラー詳細:', error.message, error.stack);
+    }
     return [];
   }
 }
