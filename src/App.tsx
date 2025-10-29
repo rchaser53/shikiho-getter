@@ -26,7 +26,12 @@ export default defineComponent({
       updateGrowthSettings,
       consecutiveGrowthYears,
       salesGrowthRatio,
-      marketCapLimit
+      marketCapLimit,
+      favoriteStockCodes,
+      toggleFavorite,
+      clearFavorites,
+      isFavorite,
+      loadFavoritesFromLocalStorage
     } = useCompanyData();
 
     const selectedCompanyIndex = ref(0);
@@ -54,6 +59,9 @@ export default defineComponent({
        }
      };
     onMounted(async () => {
+      // お気に入り銘柄を読み込み
+      loadFavoritesFromLocalStorage();
+      
       // 利用可能なデータファイルを取得
       availableFiles.value = await getAvailableDataFiles();
       
@@ -135,6 +143,7 @@ export default defineComponent({
                   </select>
                   <small class="file-info">
                     ({successfulCompanies.value.length}社のデータ
+                    {favoriteStockCodes.value.size > 0 && ` | ⭐お気に入り: ${favoriteStockCodes.value.size}銘柄でフィルタ中`}
                     {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`}
                     {showTrendChangeOnly.value && ` | 200日線プラス: ${trendChangeCompanies.value.length}社`})
                   </small>
@@ -185,6 +194,21 @@ export default defineComponent({
                 💾 表示中の銘柄を保存
               </button>
               
+              {/* お気に入りクリアボタン */}
+              {favoriteStockCodes.value.size > 0 && (
+                <button 
+                  class="clear-favorites-button"
+                  onClick={() => {
+                    if (confirm(`${favoriteStockCodes.value.size}銘柄のお気に入りをクリアしますか？`)) {
+                      clearFavorites();
+                    }
+                  }}
+                  title="お気に入り銘柄を全てクリア"
+                >
+                  🗑️ お気に入りクリア ({favoriteStockCodes.value.size})
+                </button>
+              )}
+              
               {/* 企業選択（業績詳細時のみ） */}
               {showPerformanceDetail.value && (
                 <div class="company-selector">
@@ -215,6 +239,8 @@ export default defineComponent({
               <FinancialComparisonTable
                 companies={displayCompanies.value}
                 formatNumber={formatNumber}
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
               />
             )}
           </div>

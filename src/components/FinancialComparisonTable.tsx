@@ -4,6 +4,8 @@ import type { CompanyData } from '../types';
 interface Props {
   companies: CompanyData[];
   formatNumber: (value: number | null, decimals?: number) => string;
+  toggleFavorite?: (stockCode: string) => void;
+  isFavorite?: (stockCode: string) => boolean;
 }
 
 export default defineComponent<Props>({
@@ -16,6 +18,14 @@ export default defineComponent<Props>({
     formatNumber: {
       type: Function as unknown as () => (value: number | null, decimals?: number) => string,
       required: true
+    },
+    toggleFavorite: {
+      type: Function as unknown as () => (stockCode: string) => void,
+      required: false
+    },
+    isFavorite: {
+      type: Function as unknown as () => (stockCode: string) => boolean,
+      required: false
     }
   },
   setup(props) {
@@ -200,6 +210,17 @@ export default defineComponent<Props>({
                 <th class="company-header">項目</th>
                 {validCompanies.value.map(company => (
                   <th key={company.companyId} class="company-header">
+                    {props.toggleFavorite && props.isFavorite && (
+                      <button
+                        class="favorite-toggle"
+                        onClick={() => props.toggleFavorite!(company.stockCode)}
+                        title={props.isFavorite!(company.stockCode) ? 'お気に入りから削除' : 'お気に入りに追加'}
+                        style={{ marginBottom: '4px', cursor: 'pointer', border: 'none', background: 'none', fontSize: '18px' }}
+                      >
+                        {props.isFavorite!(company.stockCode) ? '⭐' : '☆'}
+                      </button>
+                    )}
+                    <br />
                     <a 
                       href={`https://shikiho.toyokeizai.net/stocks/${company.stockCode}`}
                       target="_blank"

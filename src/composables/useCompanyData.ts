@@ -17,10 +17,20 @@ export function useCompanyData() {
   // トレンド変化した企業のstockCodeリスト
   const trendChangedStockCodes = ref<string[]>([]);
   
-  // 成功した企業データのみをフィルタ
-  const successfulCompanies = computed(() => 
-    companies.value.filter((company: CompanyData) => !company.error)
-  );
+  // お気に入り銘柄リスト
+  const favoriteStockCodes = ref<Set<string>>(new Set());
+  
+  // 成功した企業データのみをフィルタ（お気に入りがあれば、お気に入りのみ）
+  const successfulCompanies = computed(() => {
+    const filtered = companies.value.filter((company: CompanyData) => !company.error);
+    
+    // お気に入りが設定されている場合は、お気に入りのみ表示
+    if (favoriteStockCodes.value.size > 0) {
+      return filtered.filter(company => favoriteStockCodes.value.has(company.stockCode));
+    }
+    
+    return filtered;
+  });
 
   // 高成長企業フィルタ（4年連続増収で売上高2倍以上）
   const highGrowthCompanies = computed(() => {
@@ -196,6 +206,61 @@ export function useCompanyData() {
     console.log(`📊 高成長企業設定更新: ${years}年連続増収、売上高${ratio}倍以上${marketCapText}`);
   }
   
+  // お気に入り銘柄の追加
+  function addToFavorites(stockCode: string) {
+    favoriteStockCodes.value.add(stockCode);
+    saveFavoritesToLocalStorage();
+    console.log(`⭐ お気に入りに追加: ${stockCode}`);
+  }
+  
+  // お気に入り銘柄の削除
+  function removeFromFavorites(stockCode: string) {
+    favoriteStockCodes.value.delete(stockCode);
+    saveFavoritesToLocalStorage();
+    console.log(`🗑️ お気に入りから削除: ${stockCode}`);
+  }
+  
+  // お気に入りのトグル
+  function toggleFavorite(stockCode: string) {
+    if (favoriteStockCodes.value.has(stockCode)) {
+      removeFromFavorites(stockCode);
+    } else {
+      addToFavorites(stockCode);
+    }
+  }
+  
+  // お気に入り銘柄の全クリア
+  function clearFavorites() {
+    favoriteStockCodes.value.clear();
+    saveFavoritesToLocalStorage();
+    console.log('🗑️ お気に入りを全クリアしました');
+  }
+  
+  // お気に入り銘柄をlocalStorageに保存
+  function saveFavoritesToLocalStorage() {
+    const array = Array.from(favoriteStockCodes.value);
+    localStorage.setItem('favoriteStockCodes', JSON.stringify(array));
+  }
+  
+  // お気に入り銘柄をlocalStorageから読み込み
+  function loadFavoritesFromLocalStorage() {
+    try {
+      const stored = localStorage.getItem('favoriteStockCodes');
+      if (stored) {
+        const array = JSON.parse(stored);
+        favoriteStockCodes.value = new Set(array);
+        console.log(`⭐ お気に入り銘柄を読み込みました: ${array.length}銘柄`);
+      }
+    } catch (error) {
+      console.error('お気に入り銘柄の読み込みエラー:', error);
+    }
+  }
+  
+  // お気に入りかどうかをチェック
+  function isFavorite(stockCode: string): boolean {
+    return favoriteStockCodes.value.has(stockCode);
+  }
+  
   // 数値フォーマット関数
   function formatNumber(value: number | null, decimals = 0): string {
     if (value === null || value === undefined) {
@@ -254,6 +319,14 @@ export function useCompanyData() {
     updateGrowthSettings,
     consecutiveGrowthYears,
     salesGrowthRatio,
-    marketCapLimit
+    marketCapLimit,
+    // お気に入り関連
+    favoriteStockCodes,
+    addToFavorites,
+    removeFromFavorites,
+    toggleFavorite,
+    clearFavorites,
+    isFavorite,
+    loadFavoritesFromLocalStorage
   };
 }
