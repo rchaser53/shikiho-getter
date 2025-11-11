@@ -35,7 +35,7 @@ app.post('/api/save-selected-stocks', (req, res) => {
 });
 
 // 選択銘柄を取得
-app.get('/api/selected-stocks', (req, res) => {
+app.get('/api/selected-stocks', (_, res) => {
   try {
     if (!fs.existsSync(SELECTED_STOCKS_PATH)) {
       return res.json([]);

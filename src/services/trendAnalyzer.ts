@@ -52,33 +52,6 @@ async function getHistoryFiles(): Promise<string[]> {
 }
 
 /**
- * 指定日数前のファイルと最新ファイルを取得
- */
-async function getComparisonFiles(daysAgo: number = 7): Promise<{ oldFile: string | null, newFile: string | null }> {
-  const files = await getHistoryFiles();
-  if (files.length === 0) {
-    return { oldFile: null, newFile: null };
-  }
-
-  const newFile = files[files.length - 1];
-  
-  // daysAgo日前に近いファイルを探す
-  const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() - daysAgo);
-  const targetDateStr = targetDate.toISOString().slice(0, 10);
-  
-  let oldFile: string | null = null;
-  for (let i = files.length - 1; i >= 0; i--) {
-    if (files[i] <= `${targetDateStr}.json`) {
-      oldFile = files[i];
-      break;
-    }
-  }
-
-  return { oldFile, newFile };
-}
-
-/**
  * 最新のデータから200日線比率がプラスの企業を抽出
  */
 export async function detectTrendChanges(_daysAgo: number = 7): Promise<TrendChange[]> {
