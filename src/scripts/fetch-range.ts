@@ -18,19 +18,30 @@ function parseArgs() {
   npm run fetch-range -- 1000-2000          # 1000から2000まで
   npm run fetch-range -- 7372,8411,9984     # 個別指定
   npm run fetch-range -- 7000-7100,8000     # 範囲と個別の組み合わせ
+  npm run fetch-range -- --allow-duplicates 1000-2000  # 重複許可
   tsx src/scripts/fetch-range.ts 1000-2000  # 直接実行
 
 📝 重複回避機能:
   - 既存のrange-companies.jsonがある場合、重複する企業IDは自動的にスキップされます
   - 新しい企業データのみが追加され、既存データは保持されます
   - 最終的な出力は企業コード順でソートされます
+
+⚙️  オプション:
+  --allow-duplicates  重複を許可し、既存データを上書きします
 `);
     process.exit(1);
   }
   
   const companyIds: string[] = [];
+  let allowDuplicates = false;
   
   for (const arg of args) {
+    // オプションチェック
+    if (arg === '--allow-duplicates') {
+      allowDuplicates = true;
+      continue;
+    }
+    
     // カンマで分割
     const parts = arg.split(',');
     
@@ -66,7 +77,10 @@ function parseArgs() {
     }
   }
   
-  return [...new Set(companyIds)]; // 重複除去
+  return { 
+    companyIds: [...new Set(companyIds)], // 重複除去
+    allowDuplicates 
+  };
 }
 
 // 遅延関数
@@ -87,9 +101,16 @@ function showProgress(current: number, total: number, companyId: string, status:
 }
 
 // バッチ処理でデータ取得
-async function fetchRangeData(companyIds: string[], outputFile: string = 'output/range-companies.json') {
+async function fetchRangeData(
+  companyIds: string[], 
+  outputFile: string = 'output/range-companies.json',
+  allowDuplicates: boolean = false
+) {
   console.log(`📊 ${companyIds.length}社のデータを取得開始...`);
   console.log(`📝 出力先: ${outputFile}`);
+  if (allowDuplicates) {
+    console.log(`⚙️  モード: 重複許可 (既存データを上書き)`);
+  }
   
   // 出力ディレクトリを確保
   await ensureOutputDirectory(outputFile);
@@ -120,16 +141,26 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   }
   
   // 重複除去: 既に存在する企業IDを取得対象から除外
-  const filteredCompanyIds = companyIds.filter(id => !existingCompanyIds.has(id));
-  const duplicateCount = companyIds.length - filteredCompanyIds.length;
+  let filteredCompanyIds: string[];
+  let duplicateCount = 0;
   
-  if (duplicateCount > 0) {
-    console.log(`🔄 重複除外: ${duplicateCount}社（既に取得済み）`);
-  }
-  
-  if (filteredCompanyIds.length === 0) {
-    console.log('✅ 指定された全企業は既に取得済みです。');
-    return existingData;
+  if (allowDuplicates) {
+    // 重複許可モード: 全て取得
+    filteredCompanyIds = companyIds;
+    console.log(`🔄 重複許可モード: 全${companyIds.length}社を取得します`);
+  } else {
+    // 重複除去モード: 既存データをスキップ
+    filteredCompanyIds = companyIds.filter(id => !existingCompanyIds.has(id));
+    duplicateCount = companyIds.length - filteredCompanyIds.length;
+    
+    if (duplicateCount > 0) {
+      console.log(`🔄 重複除外: ${duplicateCount}社（既に取得済み）`);
+    }
+    
+    if (filteredCompanyIds.length === 0) {
+      console.log('✅ 指定された全企業は既に取得済みです。');
+      return existingData;
+    }
   }
   
   console.log(`🆕 新規取得対象: ${filteredCompanyIds.length}社`);
@@ -180,7 +211,18 @@ async function fetchRangeData(companyIds: string[], outputFile: string = 'output
   }
   
   // 結果をJSONファイルに出力（既存データとマージ）
-  const filteredResults = results.filter(r => r && r.companyName && r.companyName !== 'N/A' && r.isExist !== '0' && !r.error);
+  let finalResults = results;
+  
+  if (allowDuplicates) {
+    // 重複許可モード: 新しく取得したデータで既存データを上書き
+    const newStockCodes = new Set(results.slice(-successCount).map(c => c.stockCode));
+    // 既存データから、今回取得した銘柄を削除
+    const existingWithoutDuplicates = existingData?.companies.filter(c => !newStockCodes.has(c.stockCode)) || [];
+    finalResults = [...existingWithoutDuplicates, ...results.slice(-successCount)];
+    console.log(`🔄 重複データを上書き: ${newStockCodes.size}社`);
+  }
+  
+  const filteredResults = finalResults.filter(r => r && r.companyName && r.companyName !== 'N/A' && r.isExist !== '0' && !r.error);
   const outputData: CompaniesData = {
     timestamp: new Date().toISOString(),
     totalCompanies: filteredResults.length,
@@ -246,10 +288,13 @@ async function main() {
     console.log('🚀 四季報データ範囲取得スクリプト');
     console.log('='.repeat(40));
     
-    const companyIds = parseArgs();
+    const { companyIds, allowDuplicates } = parseArgs();
     
     console.log(`📋 取得対象: ${companyIds.length}社`);
     console.log(`🆔 範囲: ${Math.min(...companyIds.map(Number))} - ${Math.max(...companyIds.map(Number))}`);
+    if (allowDuplicates) {
+      console.log(`⚙️  モード: 重複許可`);
+    }
     
     // 確認プロンプト（大量取得時）
     if (companyIds.length > 100) {
@@ -273,7 +318,7 @@ async function main() {
       }
     }
     
-    await fetchRangeData(companyIds);
+    await fetchRangeData(companyIds, undefined, allowDuplicates);
     
   } catch (error) {
     console.error('\n❌ エラーが発生しました:', (error as Error).message);
