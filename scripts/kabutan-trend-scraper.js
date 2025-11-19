@@ -13,11 +13,46 @@ const config = JSON.parse(fs.readFileSync(join(__dirname, '..', 'config.json'), 
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// 会社名を取得する関数
+async function fetchCompanyName(stockCode) {
+  const url = `https://kabutan.jp/stock/?code=${stockCode}`;
+  try {
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+    
+    // タイトルから会社名を取得（例: "ソフトバンクグループ(9984)"）
+    const title = $('title').text();
+    const match = title.match(/^(.+?)\(/);
+    if (match) {
+      return match[1].trim();
+    }
+    
+    // または、h2タグから取得
+    const h2Text = $('h2').first().text();
+    const h2Match = h2Text.match(/^\d+\s+(.+)$/);
+    if (h2Match) {
+      return h2Match[1].trim();
+    }
+    
+    return stockCode; // フォールバック
+  } catch (err) {
+    return stockCode;
+  }
+}
+
 async function fetchTrends(stockCode) {
   const url = `https://kabutan.jp/stock/?code=${stockCode}`;
   try {
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
+    
+    // 会社名を取得
+    let companyName = stockCode;
+    const title = $('title').text();
+    const match = title.match(/^(.+?)\(/);
+    if (match) {
+      companyName = match[1].trim();
+    }
     
     // 株価トレンドの画像を探す
     const trendImg = $('img[src*="kabuka_trend"]');
@@ -79,22 +114,108 @@ async function fetchTrends(stockCode) {
       }
     }
     
-    return { stockCode, trends };
+    return { stockCode, companyName, trends };
   } catch (err) {
-    return { stockCode, error: err.message };
+    return { stockCode, companyName: stockCode, error: err.message };
   }
 }
 
+// 前日のデータを読み込む
+function loadPreviousData(trendsDir) {
+  try {
+    const files = fs.readdirSync(trendsDir)
+      .filter(f => f.endsWith('.json') && f !== 'latest.json')
+      .sort()
+      .reverse();
+    
+    if (files.length === 0) return null;
+    
+    const previousFile = join(trendsDir, files[0]);
+    const data = JSON.parse(fs.readFileSync(previousFile, 'utf-8'));
+    return { data, date: files[0].replace('.json', '') };
+  } catch (err) {
+    return null;
+  }
+}
+
+// トレンドの変化を検出
+function detectChanges(current, previous) {
+  const changes = [];
+  
+  for (const company of current) {
+    if (!company.trends) continue;
+    
+    const prevCompany = previous.find(p => p.stockCode === company.stockCode);
+    if (!prevCompany || !prevCompany.trends) continue;
+    
+    const trendKeys = ['目先(5日線)', '短期(25日線)', '中期(75日線)', '長期(200日線)'];
+    
+    for (const key of trendKeys) {
+      const currDirection = company.trends[key]?.direction;
+      const prevDirection = prevCompany.trends[key]?.direction;
+      
+      if (currDirection && prevDirection && currDirection !== prevDirection) {
+        changes.push({
+          stockCode: company.stockCode,
+          companyName: company.companyName,
+          period: key,
+          from: prevDirection,
+          to: currDirection,
+          rate: company.trends[key]?.rate
+        });
+      }
+    }
+  }
+  
+  return changes;
+}
+
 async function main() {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const trendsDir = join(__dirname, '..', 'output', 'trends');
+  
+  // ディレクトリが存在しない場合は作成
+  if (!fs.existsSync(trendsDir)) {
+    fs.mkdirSync(trendsDir, { recursive: true });
+  }
+  
   const results = [];
   for (const code of config.companyIds) {
     const res = await fetchTrends(code);
     results.push(res);
-    console.log(res);
+    console.log(`${res.companyName} (${res.stockCode}):`, res.trends ? 'OK' : 'NG');
     await sleep(config.requestInterval);
   }
-  fs.writeFileSync(join(__dirname, '..', config.outputFile), JSON.stringify(results, null, 2));
-  console.log('完了: ', config.outputFile);
+  
+  // 今日のファイルに保存
+  const todayFile = join(trendsDir, `${today}.json`);
+  fs.writeFileSync(todayFile, JSON.stringify(results, null, 2));
+  
+  // latest.jsonも更新
+  const latestFile = join(trendsDir, 'latest.json');
+  fs.writeFileSync(latestFile, JSON.stringify(results, null, 2));
+  
+  console.log(`\n保存完了: ${todayFile}`);
+  
+  // 前日のデータと比較
+  const previousData = loadPreviousData(trendsDir);
+  
+  if (previousData) {
+    console.log(`\n前回データ: ${previousData.date}`);
+    const changes = detectChanges(results, previousData.data);
+    
+    if (changes.length > 0) {
+      console.log(`\n🔔 トレンド変化を検出しました (${changes.length}件):\n`);
+      for (const change of changes) {
+        console.log(`📊 ${change.companyName} (${change.stockCode})`);
+        console.log(`   ${change.period}: ${change.from} → ${change.to} (乖離率: ${change.rate})`);
+      }
+    } else {
+      console.log('\n✅ トレンドに変化はありません');
+    }
+  } else {
+    console.log('\n初回実行のため、比較データがありません');
+  }
 }
 
 main();
