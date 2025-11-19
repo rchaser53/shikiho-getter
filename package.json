@@ -11,7 +11,8 @@
     "fetch-daily-history": "tsx src/scripts/fetch-daily-history.ts",
     "fetch-daily-history-quick": "tsx src/scripts/fetch-daily-history-quick.ts",
     "api-server": "tsx src/scripts/save-selected-stocks-api.ts",
-    "serve": "vite preview --port 3000"
+    "serve": "vite preview --port 3000",
+    "start-all": "concurrently \"npm run api-server\" \"npm run serve\""
   },
   "dependencies": {
     "vue": "^3.4.0",
@@ -29,6 +30,8 @@
     "tsx": "^4.0.0",
     "vite": "^5.0.0",
     "vue-tsc": "^2.0.0"
+    ,
+    "concurrently": "^8.2.0"
   },
   "keywords": ["shikiho", "stock", "api", "vue", "tsx", "typescript"],
   "author": "",
