@@ -46,12 +46,20 @@ async function fetchTrends(stockCode) {
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
     
-    // 会社名を取得
+    // 会社名を取得 - h2タグから取得（例: "9984　ソフトバンクグループ"）
     let companyName = stockCode;
-    const title = $('title').text();
-    const match = title.match(/^(.+?)\(/);
-    if (match) {
-      companyName = match[1].trim();
+    const h2Text = $('h2').first().text().trim();
+    // 4桁の数字 + 全角または半角スペース + 会社名
+    const h2Match = h2Text.match(/^\d{4}\s*[　\s]+(.+)$/);
+    if (h2Match) {
+      companyName = h2Match[1].trim();
+    } else {
+      // タイトルからも試す（例: "ソフトバンクグループ（ＳＢＧ）【9984】"）
+      const title = $('title').text();
+      const titleMatch = title.match(/^(.+?)[（(【]/);
+      if (titleMatch) {
+        companyName = titleMatch[1].trim();
+      }
     }
     
     // 株価トレンドの画像を探す
