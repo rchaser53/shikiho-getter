@@ -11,6 +11,7 @@ export default defineComponent({
       successfulCompanies,
       highGrowthCompanies,
       trendChangeCompanies,
+      favoriteCompanies,
       displayCompanies,
       loading,
       error,
@@ -20,8 +21,10 @@ export default defineComponent({
       formatNumber,
       showHighGrowthOnly,
       showTrendChangeOnly,
+      showFavoritesOnly,
       toggleHighGrowthFilter,
       toggleTrendChangeFilter,
+      toggleFavoritesFilter,
       loadTrendChangeData,
       updateGrowthSettings,
       consecutiveGrowthYears,
@@ -143,7 +146,7 @@ export default defineComponent({
                   </select>
                   <small class="file-info">
                     ({successfulCompanies.value.length}社のデータ
-                    {favoriteStockCodes.value.size > 0 && ` | ⭐お気に入り: ${favoriteStockCodes.value.size}銘柄でフィルタ中`}
+                    {showFavoritesOnly.value && ` | ⭐お気に入り: ${favoriteCompanies.value.length}社でフィルタ中`}
                     {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`}
                     {showTrendChangeOnly.value && ` | 200日線プラス: ${trendChangeCompanies.value.length}社`})
                   </small>
@@ -175,6 +178,17 @@ export default defineComponent({
               >
                 {showTrendChangeOnly.value ? '📈 200日線プラス銘柄のみ' : '📊 200日線プラスフィルタ'}
               </button>
+              
+              {/* お気に入りフィルタ */}
+              {favoriteStockCodes.value.size > 0 && (
+                <button 
+                  class={`filter-button ${showFavoritesOnly.value ? 'active' : ''}`}
+                  onClick={toggleFavoritesFilter}
+                  title="お気に入りに登録した銘柄のみ表示"
+                >
+                  {showFavoritesOnly.value ? '⭐ お気に入りのみ表示中' : `⭐ お気に入りのみ表示 (${favoriteStockCodes.value.size})`}
+                </button>
+              )}
               
               {/* 設定ボタン */}
               <button 
@@ -250,19 +264,22 @@ export default defineComponent({
           <div class="no-data">
             <h2>データが見つかりません</h2>
             <p>
-              {showTrendChangeOnly.value ? '200日移動平均線より株価が上にある銘柄がありません。履歴データが不足している可能性があります。' :
+              {showFavoritesOnly.value ? 'お気に入りに登録された銘柄がありません。' :
+               showTrendChangeOnly.value ? '200日移動平均線より株価が上にある銘柄がありません。履歴データが不足している可能性があります。' :
                showHighGrowthOnly.value ? '高成長企業の条件を満たす企業がありません。' : 
                '企業データを取得してください。'}
             </p>
             <div class="action-buttons">
-              {showTrendChangeOnly.value ? (
+              {showFavoritesOnly.value ? (
+                <button onClick={toggleFavoritesFilter}>全企業を表示</button>
+              ) : showTrendChangeOnly.value ? (
                 <button onClick={toggleTrendChangeFilter}>全企業を表示</button>
               ) : showHighGrowthOnly.value ? (
                 <button onClick={toggleHighGrowthFilter}>全企業を表示</button>
               ) : (
                 <button onClick={() => loadCompanyData()}>データを読み込む</button>
               )}
-              {!showHighGrowthOnly.value && (
+              {!showHighGrowthOnly.value && !showFavoritesOnly.value && (
                 <div class="help-text">
                   <p><strong>データ取得方法:</strong></p>
                   <code>npm run fetch-range -- 7000-7100</code><br/>

@@ -8,6 +8,7 @@ export function useCompanyData() {
   const dataSource = ref<string>('range-companies.json'); // データソースを管理
   const showHighGrowthOnly = ref(false); // 高成長企業フィルタ
   const showTrendChangeOnly = ref(false); // 200日線プラス銘柄フィルタ
+  const showFavoritesOnly = ref(false); // お気に入りのみ表示フィルタ
   
   // 高成長企業の判定条件設定
   const consecutiveGrowthYears = ref(4); // 連続増収年数
@@ -20,16 +21,17 @@ export function useCompanyData() {
   // お気に入り銘柄リスト
   const favoriteStockCodes = ref<Set<string>>(new Set());
   
-  // 成功した企業データのみをフィルタ（お気に入りがあれば、お気に入りのみ）
+  // 成功した企業データのみをフィルタ
   const successfulCompanies = computed(() => {
-    const filtered = companies.value.filter((company: CompanyData) => !company.error);
-    
-    // お気に入りが設定されている場合は、お気に入りのみ表示
-    if (favoriteStockCodes.value.size > 0) {
-      return filtered.filter(company => favoriteStockCodes.value.has(company.stockCode));
+    return companies.value.filter((company: CompanyData) => !company.error);
+  });
+  
+  // お気に入り銘柄のみをフィルタ
+  const favoriteCompanies = computed(() => {
+    if (favoriteStockCodes.value.size === 0) {
+      return [];
     }
-    
-    return filtered;
+    return successfulCompanies.value.filter(company => favoriteStockCodes.value.has(company.stockCode));
   });
 
   // 高成長企業フィルタ（4年連続増収で売上高2倍以上）
@@ -52,10 +54,15 @@ export function useCompanyData() {
 
   // 表示用の企業データ（フィルタ適用後）
   const displayCompanies = computed(() => {
-    if (showTrendChangeOnly.value) {
+    if (showFavoritesOnly.value) {
+      return favoriteCompanies.value;
+    } else if (showTrendChangeOnly.value) {
       return trendChangeCompanies.value;
+    } else if (showHighGrowthOnly.value) {
+      return highGrowthCompanies.value;
+    } else {
+      return successfulCompanies.value;
     }
-    return showHighGrowthOnly.value ? highGrowthCompanies.value : successfulCompanies.value;
   });
   
   // データ読み込み（ファイル名指定可能）
@@ -178,6 +185,7 @@ export function useCompanyData() {
     showHighGrowthOnly.value = !showHighGrowthOnly.value;
     if (showHighGrowthOnly.value) {
       showTrendChangeOnly.value = false; // 他のフィルタをオフ
+      showFavoritesOnly.value = false;
     }
     console.log(`🔍 高成長企業フィルタ: ${showHighGrowthOnly.value ? 'ON' : 'OFF'}`);
   }
@@ -187,8 +195,19 @@ export function useCompanyData() {
     showTrendChangeOnly.value = !showTrendChangeOnly.value;
     if (showTrendChangeOnly.value) {
       showHighGrowthOnly.value = false; // 他のフィルタをオフ
+      showFavoritesOnly.value = false;
     }
     console.log(`📈 200日線プラスフィルタ: ${showTrendChangeOnly.value ? 'ON' : 'OFF'}`);
+  }
+  
+  // お気に入りフィルタ切り替え関数
+  function toggleFavoritesFilter() {
+    showFavoritesOnly.value = !showFavoritesOnly.value;
+    if (showFavoritesOnly.value) {
+      showHighGrowthOnly.value = false; // 他のフィルタをオフ
+      showTrendChangeOnly.value = false;
+    }
+    console.log(`⭐ お気に入りフィルタ: ${showFavoritesOnly.value ? 'ON' : 'OFF'}`);
   }
   
   // トレンド変化データをロード
@@ -304,6 +323,7 @@ export function useCompanyData() {
     successfulCompanies,
     highGrowthCompanies,
     trendChangeCompanies,
+    favoriteCompanies,
     displayCompanies,
     loading,
     error,
@@ -313,8 +333,10 @@ export function useCompanyData() {
     formatNumber,
     showHighGrowthOnly,
     showTrendChangeOnly,
+    showFavoritesOnly,
     toggleHighGrowthFilter,
     toggleTrendChangeFilter,
+    toggleFavoritesFilter,
     loadTrendChangeData,
     updateGrowthSettings,
     consecutiveGrowthYears,
