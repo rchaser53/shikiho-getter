@@ -248,6 +248,7 @@ export default defineComponent({
                 companyName={selectedCompany()!.companyName}
                 stockCode={selectedCompany()!.stockCode}
                 formatNumber={formatNumber}
+                latestPeriod={selectedCompany()!.latestResults?.period}
               />
             ) : (
               <FinancialComparisonTable

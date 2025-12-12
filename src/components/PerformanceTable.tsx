@@ -6,6 +6,7 @@ interface Props {
   companyName: string;
   stockCode: string;
   formatNumber: (value: number | null, decimals?: number) => string;
+  latestPeriod?: string;
 }
 
 export default defineComponent<Props>({
@@ -26,6 +27,10 @@ export default defineComponent<Props>({
     formatNumber: {
       type: Function as unknown as () => (value: number | null, decimals?: number) => string,
       required: true
+    },
+    latestPeriod: {
+      type: String,
+      required: false
     }
   },
   setup(props) {
@@ -89,7 +94,11 @@ export default defineComponent<Props>({
             <tbody>
               {sortedData.map((row, index) => (
                 <tr key={`${row.period}-${index}`} class={row.isForecast ? 'forecast-row' : 'actual-row'}>
-                  {renderPeriodCell(row.period, row.isForecast)}
+                  {renderPeriodCell(
+                    // 最新の実績行のみ latestResults.period を優先表示
+                    (!row.isForecast && index === 0 && props.latestPeriod) ? props.latestPeriod : row.period,
+                    row.isForecast
+                  )}
                   {renderValueCell(row.netSales, true)}
                   {renderValueCell(row.operatingIncome)}
                   {renderValueCell(row.preTaxIncome)}
