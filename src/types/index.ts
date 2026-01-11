@@ -102,6 +102,22 @@ export interface CompaniesData {
   companies: CompanyData[];
 }
 
+// 日次履歴データ（output/history/YYYY-MM-DD.json）
+export interface HistoryRecord {
+  stock_code: string;
+  company_name?: string;
+  ratio_of_price_to_200days_ma?: number | null;
+  current_price?: number | null;
+  fetched_at: string;
+  snapshotted_at?: string; // 実際に取得した時刻(ISO)
+}
+
+export interface StockPricePoint {
+  date: string; // YYYY-MM-DD
+  price: number | null;
+  ratioOfPriceTo200DaysMA: number | null;
+}
+
 export interface Config {
   companyIds: string[];
   outputFile: string;

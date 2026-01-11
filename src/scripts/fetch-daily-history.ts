@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 const COMPANIES_PATH = path.resolve(__dirname, '../../output/range-companies.json');
 const SELECTED_STOCKS_PATH = path.resolve(__dirname, '../../output/selected-stocks.json');
 const HISTORY_DIR = path.resolve(__dirname, '../../output/history');
+const PUBLIC_HISTORY_DIR = path.resolve(__dirname, '../../public/output/history');
 const API_URL = 'https://api-shikiho.toyokeizai.net/stocks/v1/stocks';
 
 async function fetchCompanyData(stockCode: string) {
@@ -24,6 +25,7 @@ async function main() {
   const today = new Date();
   const yyyyMMdd = today.toISOString().slice(0, 10);
   const outPath = path.join(HISTORY_DIR, `${yyyyMMdd}.json`);
+  const publicOutPath = path.join(PUBLIC_HISTORY_DIR, `${yyyyMMdd}.json`);
 
   let stockCodes: string[] = [];
   
@@ -44,12 +46,16 @@ async function main() {
   for (const code of stockCodes) {
     const data = await fetchCompanyData(code);
     if (data) {
+      const self = Array.isArray(data.rivals)
+        ? data.rivals.find((r: any) => String(r.stock_code) === String(code))
+        : null;
       results.push({
         stock_code: code,
-        company_name: data.shikiho_name,
+        company_name: self?.company_name_j ?? self?.company_name_j9c,
         ratio_of_price_to_200days_ma: data.ratio_of_price_to_200days_ma,
-        current_price: data.stock_price,
-        fetched_at: yyyyMMdd
+        current_price: self?.current_price ?? data.stock_price ?? null,
+        fetched_at: yyyyMMdd,
+        snapshotted_at: new Date().toISOString()
       });
     }
     // API rate limit対策: 0.5秒待機
@@ -57,6 +63,11 @@ async function main() {
   }
 
   fs.writeFileSync(outPath, JSON.stringify(results, null, 2), 'utf-8');
+  // publicディレクトリにもコピー
+  if (!fs.existsSync(PUBLIC_HISTORY_DIR)) {
+    fs.mkdirSync(PUBLIC_HISTORY_DIR, { recursive: true });
+  }
+  fs.writeFileSync(publicOutPath, JSON.stringify(results, null, 2), 'utf-8');
   console.log(`Saved ${results.length} companies to ${outPath}`);
 }
 

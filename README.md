@@ -90,6 +90,23 @@ npm run fetch-range -- 7000-7050,8411,9984
 npm run fetch-range -- 1000-1100,7000-7100
 ```
 
+#### 日次履歴（株価スナップショット）
+
+ローカルの `output/history/YYYY-MM-DD.json`（および `public/output/history/`）を使って、指定日付の株価や直近N本の時系列を参照できます。
+
+```bash
+# 今日の履歴ファイルを生成（selected-stocks.json があればそれを優先）
+npm run fetch-daily-history
+
+# 指定日付の株価を参照（省略時は「実行日」→無ければ直近の履歴にフォールバック）
+npm run get-history-price -- --code 7080 --date 2025-10-29
+
+# 直近N本（存在する履歴ファイルN本）の時系列を参照
+npm run get-history-price -- --code 7080 --points 60 --end-date 2025-10-29
+```
+
+※ 既存の履歴JSONに `current_price` が含まれていない場合、株価は `null` になります（今後 `fetch-daily-history` で生成する履歴には `current_price` を含めます）。
+
 **範囲取得の特徴：**
 - 📊 プログレスバー表示で進捗確認
 - ⚡ 最大10000社まで一度に取得可能

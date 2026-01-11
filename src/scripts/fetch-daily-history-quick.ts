@@ -55,16 +55,20 @@ async function createHistoryFile(daysAgo: number = 0) {
     const data = await fetchCompanyData(code);
     
     if (data) {
+      const self = Array.isArray(data.rivals)
+        ? data.rivals.find((r: any) => String(r.stock_code) === String(code))
+        : null;
       // ランダムな変動をシミュレート（テスト用）
       const baseRatio = data.ratio_of_price_to_200days_ma || 0;
       const variation = daysAgo > 0 ? (Math.random() - 0.5) * 0.1 : 0; // ±5%の変動
       
       results.push({
         stock_code: code,
-        company_name: data.shikiho_name,
+        company_name: self?.company_name_j ?? self?.company_name_j9c,
         ratio_of_price_to_200days_ma: baseRatio + variation,
-        current_price: data.stock_price,
-        fetched_at: yyyyMMdd
+        current_price: self?.current_price ?? data.stock_price ?? null,
+        fetched_at: yyyyMMdd,
+        snapshotted_at: new Date().toISOString()
       });
     }
     

@@ -13,33 +13,6 @@ const config = JSON.parse(fs.readFileSync(join(__dirname, '..', 'config.json'), 
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// 会社名を取得する関数
-async function fetchCompanyName(stockCode) {
-  const url = `https://kabutan.jp/stock/?code=${stockCode}`;
-  try {
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-    
-    // タイトルから会社名を取得（例: "ソフトバンクグループ(9984)"）
-    const title = $('title').text();
-    const match = title.match(/^(.+?)\(/);
-    if (match) {
-      return match[1].trim();
-    }
-    
-    // または、h2タグから取得
-    const h2Text = $('h2').first().text();
-    const h2Match = h2Text.match(/^\d+\s+(.+)$/);
-    if (h2Match) {
-      return h2Match[1].trim();
-    }
-    
-    return stockCode; // フォールバック
-  } catch (err) {
-    return stockCode;
-  }
-}
-
 async function fetchTrends(stockCode) {
   const url = `https://kabutan.jp/stock/?code=${stockCode}`;
   try {
