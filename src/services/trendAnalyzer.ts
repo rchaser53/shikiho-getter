@@ -1,10 +1,4 @@
-interface HistoryRecord {
-  stock_code: string;
-  company_name: string;
-  ratio_of_price_to_200days_ma: number | null;
-  current_price: number | null;
-  fetched_at: string;
-}
+import type { HistoryRecord } from '../types/index.js';
 
 interface TrendChange {
   stock_code: string;
@@ -87,7 +81,7 @@ export async function detectTrendChanges(_daysAgo: number = 7): Promise<TrendCha
       if (ratio != null && ratio > 0) {
         results.push({
           stock_code: record.stock_code,
-          company_name: record.company_name,
+          company_name: record.company_name ?? record.stock_code,
           old_ratio: null,
           new_ratio: ratio,
           change: null,
