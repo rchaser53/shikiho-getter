@@ -131,6 +131,224 @@ body {
   transform: translateY(-1px);
 }
 
+/* ランダム表示ボタン */
+.random-button {
+  background: #8e44ad;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.random-button:hover {
+  background: #7d3c98;
+  transform: translateY(-1px);
+}
+
+.random-button.active {
+  background: #16a085;
+}
+
+.random-button.active:hover {
+  background: #138d75;
+}
+
+.back-button {
+  background: #34495e;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.back-button:hover {
+  background: #2c3e50;
+  transform: translateY(-1px);
+}
+
+/* ランダムビュー */
+.random-view {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.random-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 16px;
+}
+
+.random-error {
+  text-align: center;
+  padding: 28px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.random-error h2 {
+  color: #e74c3c;
+  margin-bottom: 12px;
+}
+
+.random-error-help {
+  margin-top: 12px;
+  color: #555;
+  font-size: 13px;
+}
+
+.random-error-help code {
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: #495057;
+}
+
+.random-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.random-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.random-title h2 {
+  font-size: 22px;
+  color: #2c3e50;
+  margin-bottom: 6px;
+}
+
+.random-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(52, 152, 219, 0.12);
+  color: #2c3e50;
+  font-weight: bold;
+  font-size: 12px;
+  border: 1px solid rgba(52, 152, 219, 0.25);
+}
+
+.muted {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.random-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.random-refresh {
+  background: #8e44ad;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.random-refresh:hover {
+  background: #7d3c98;
+  transform: translateY(-1px);
+}
+
+.random-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.random-metrics .metric {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.random-metrics .label {
+  color: #6c757d;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.random-metrics .value {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-weight: bold;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.random-latest {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #e9ecef;
+}
+
+.random-latest h3 {
+  font-size: 16px;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.latest-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.kv {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.kv .k {
+  color: #6c757d;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.kv .v {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
 /* 設定モーダル */
 .modal-overlay {
   position: fixed;
@@ -473,6 +691,19 @@ body {
   
   .toggle-button {
     width: 100%;
+  }
+
+  .random-button,
+  .back-button {
+    width: 100%;
+  }
+
+  .random-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .latest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

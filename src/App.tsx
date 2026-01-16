@@ -3,6 +3,7 @@ import { useCompanyData } from './composables/useCompanyData';
 import FinancialComparisonTable from './components/FinancialComparisonTable';
 import PerformanceTable from './components/PerformanceTable';
 import SettingsModal from './components/SettingsModal';
+import type { CompanyData } from './types';
 
 export default defineComponent({
   name: 'App',
@@ -38,7 +39,13 @@ export default defineComponent({
     } = useCompanyData();
 
     const selectedCompanyIndex = ref(0);
-    const showPerformanceDetail = ref(false);
+    const viewMode = ref<'comparison' | 'performance' | 'random'>('comparison');
+
+    const randomCompany = ref<CompanyData | null>(null);
+    const randomLoading = ref(false);
+    const randomError = ref<string | null>(null);
+    const randomPickedFrom = ref<string | null>(null);
+
     const availableFiles = ref<string[]>(['range-companies.json']);
     const showSettingsModal = ref(false);
 
@@ -83,7 +90,43 @@ export default defineComponent({
     });
 
     const togglePerformanceDetail = () => {
-      showPerformanceDetail.value = !showPerformanceDetail.value;
+      viewMode.value = viewMode.value === 'performance' ? 'comparison' : 'performance';
+    };
+
+    const showRandomView = () => {
+      viewMode.value = 'random';
+    };
+
+    const backToComparison = () => {
+      viewMode.value = 'comparison';
+      randomError.value = null;
+    };
+
+    const fetchRandomCompany = async () => {
+      randomLoading.value = true;
+      randomError.value = null;
+      randomPickedFrom.value = null;
+      showRandomView();
+
+      try {
+        const fileName = dataSource.value || 'range-companies.json';
+        const response = await fetch(
+          `http://localhost:3001/api/random-company?file=${encodeURIComponent(fileName)}`
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error || 'ランダム企業の取得に失敗しました');
+        }
+        randomCompany.value = data.company || null;
+        randomPickedFrom.value = data.pickedFrom || null;
+      } catch (err) {
+        randomCompany.value = null;
+        randomError.value =
+          (err as Error).message ||
+          'ランダム企業の取得に失敗しました。APIサーバーが起動しているか確認してください。';
+      } finally {
+        randomLoading.value = false;
+      }
     };
 
     const handleDataSourceChange = async (fileName: string) => {
@@ -155,11 +198,26 @@ export default defineComponent({
               
               {/* 表示切り替えボタン */}
               <button 
-                class={`toggle-button ${showPerformanceDetail.value ? 'active' : ''}`}
+                class={`toggle-button ${viewMode.value === 'performance' ? 'active' : ''}`}
                 onClick={togglePerformanceDetail}
               >
-                {showPerformanceDetail.value ? '📊 比較表示に戻る' : '📈 業績詳細を表示'}
+                {viewMode.value === 'performance' ? '📊 比較表示に戻る' : '📈 業績詳細を表示'}
               </button>
+
+              {/* ランダム1社取得 */}
+              <button
+                class={`random-button ${viewMode.value === 'random' ? 'active' : ''}`}
+                onClick={fetchRandomCompany}
+                title="出力済みの企業一覧からランダムに1社選び、四季報APIから最新情報を取得して表示"
+              >
+                {viewMode.value === 'random' ? '🎲 次の1社' : '🎲 ランダム1社'}
+              </button>
+
+              {viewMode.value === 'random' && (
+                <button class="back-button" onClick={backToComparison}>
+                  ↩️ 比較表示へ
+                </button>
+              )}
               
               {/* 高成長企業フィルタ */}
               <button 
@@ -224,7 +282,7 @@ export default defineComponent({
               )}
               
               {/* 企業選択（業績詳細時のみ） */}
-              {showPerformanceDetail.value && (
+              {viewMode.value === 'performance' && (
                 <div class="company-selector">
                   <label>🏢 企業選択: </label>
                   <select 
@@ -242,7 +300,116 @@ export default defineComponent({
             </div>
 
             {/* メインコンテンツ */}
-            {showPerformanceDetail.value && selectedCompany() ? (
+            {viewMode.value === 'random' ? (
+              <div class="random-view">
+                {randomLoading.value && (
+                  <div class="random-loading">
+                    <div class="spinner"></div>
+                    <p>ランダム企業を取得中...</p>
+                  </div>
+                )}
+
+                {randomError.value && (
+                  <div class="random-error">
+                    <h2>ランダム取得エラー</h2>
+                    <p>{randomError.value}</p>
+                    <div class="random-error-help">
+                      <p>APIサーバー起動: <code>npm run api-server</code></p>
+                      <p>その後にもう一度「🎲 ランダム1社」を押してください。</p>
+                    </div>
+                  </div>
+                )}
+
+                {!randomLoading.value && !randomError.value && randomCompany.value && (
+                  <div>
+                    <div class="random-card">
+                      <div class="random-card-header">
+                        <div class="random-title">
+                          <h2>{randomCompany.value.companyName}</h2>
+                          <div class="random-subtitle">
+                            <span class="badge">{randomCompany.value.stockCode}</span>
+                            {randomCompany.value.sectorName && (
+                              <span class="muted">{randomCompany.value.sectorName}</span>
+                            )}
+                            {randomPickedFrom.value && (
+                              <span class="muted">（source: {randomPickedFrom.value}）</span>
+                            )}
+                          </div>
+                        </div>
+                        <div class="random-actions">
+                          <button class="random-refresh" onClick={fetchRandomCompany}>
+                            🎲 次の1社
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="random-metrics">
+                        <div class="metric">
+                          <div class="label">現在株価</div>
+                          <div class="value">{formatNumber(randomCompany.value.currentPrice, 0)}</div>
+                        </div>
+                        <div class="metric">
+                          <div class="label">PER</div>
+                          <div class="value">{formatNumber(randomCompany.value.priceEarningsRatio, 2)}</div>
+                        </div>
+                        <div class="metric">
+                          <div class="label">PBR</div>
+                          <div class="value">{formatNumber(randomCompany.value.priceBookValueRatio, 2)}</div>
+                        </div>
+                        <div class="metric">
+                          <div class="label">配当利回り</div>
+                          <div class="value">{formatNumber(randomCompany.value.dividendYield, 2)}%</div>
+                        </div>
+                        <div class="metric">
+                          <div class="label">自己資本比率</div>
+                          <div class="value">{formatNumber(randomCompany.value.equityRatio, 1)}%</div>
+                        </div>
+                        <div class="metric">
+                          <div class="label">ROE</div>
+                          <div class="value">{formatNumber(randomCompany.value.roe, 2)}</div>
+                        </div>
+                      </div>
+
+                      {randomCompany.value.latestResults && (
+                        <div class="random-latest">
+                          <h3>最新実績</h3>
+                          <div class="latest-grid">
+                            <div class="kv">
+                              <div class="k">期</div>
+                              <div class="v">{randomCompany.value.latestResults.period}</div>
+                            </div>
+                            <div class="kv">
+                              <div class="k">売上高</div>
+                              <div class="v">{formatNumber(randomCompany.value.latestResults.netSales, 0)}</div>
+                            </div>
+                            <div class="kv">
+                              <div class="k">営業利益</div>
+                              <div class="v">{formatNumber(randomCompany.value.latestResults.operatingIncome, 0)}</div>
+                            </div>
+                            <div class="kv">
+                              <div class="k">純利益</div>
+                              <div class="v">{formatNumber(randomCompany.value.latestResults.netIncome, 0)}</div>
+                            </div>
+                            <div class="kv">
+                              <div class="k">EPS</div>
+                              <div class="v">{formatNumber(randomCompany.value.latestResults.earningsPerShare, 2)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <PerformanceTable
+                      performanceData={randomCompany.value.performanceData}
+                      companyName={randomCompany.value.companyName}
+                      stockCode={randomCompany.value.stockCode}
+                      formatNumber={formatNumber}
+                      latestPeriod={randomCompany.value.latestResults?.period}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : viewMode.value === 'performance' && selectedCompany() ? (
               <PerformanceTable
                 performanceData={selectedCompany()!.performanceData}
                 companyName={selectedCompany()!.companyName}
