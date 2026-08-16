@@ -1,6 +1,34 @@
 import { ref, computed } from 'vue';
 import type { CompanyData } from '../types';
 
+export type MetricFilterKey =
+  | 'priceEarningsRatio'
+  | 'priceBookValueRatio'
+  | 'dividendYield'
+  | 'equityRatio'
+  | 'roe'
+  | 'operatingMargin'
+  | 'netProfitMargin'
+  | 'debtToEquityRatio';
+
+export interface MetricFilter {
+  min: number | null;
+  max: number | null;
+}
+
+export type MetricFilters = Record<MetricFilterKey, MetricFilter>;
+
+const emptyMetricFilters = (): MetricFilters => ({
+  priceEarningsRatio: { min: null, max: null },
+  priceBookValueRatio: { min: null, max: null },
+  dividendYield: { min: null, max: null },
+  equityRatio: { min: null, max: null },
+  roe: { min: null, max: null },
+  operatingMargin: { min: null, max: null },
+  netProfitMargin: { min: null, max: null },
+  debtToEquityRatio: { min: null, max: null }
+});
+
 export function useCompanyData() {
   const companies = ref<CompanyData[]>([]);
   const loading = ref(false);
@@ -14,6 +42,7 @@ export function useCompanyData() {
   const consecutiveGrowthYears = ref(4); // 連続増収年数
   const salesGrowthRatio = ref(2.0); // 売上高成長率（倍）
   const marketCapLimit = ref<number | null>(null); // 時価総額上限（億円、nullは制限なし）
+  const metricFilters = ref<MetricFilters>(emptyMetricFilters());
   
   // トレンド変化した企業のstockCodeリスト
   const trendChangedStockCodes = ref<string[]>([]);
@@ -66,6 +95,14 @@ export function useCompanyData() {
 
       if (showHighGrowthOnly.value && !isHighGrowthCompany(company)) {
         return false;
+      }
+
+      for (const [key, filter] of Object.entries(metricFilters.value) as [MetricFilterKey, MetricFilter][]) {
+        const value = company[key];
+        if (filter.min === null && filter.max === null) continue;
+        if (value === null || value === undefined) return false;
+        if (filter.min !== null && value < filter.min) return false;
+        if (filter.max !== null && value > filter.max) return false;
       }
 
       return true;
@@ -219,6 +256,10 @@ export function useCompanyData() {
     const marketCapText = marketCapLimitValue ? `、時価総額${marketCapLimitValue}億円以下` : '';
     console.log(`📊 高成長企業設定更新: ${years}年連続増収、売上高${ratio}倍以上${marketCapText}`);
   }
+
+  function updateMetricFilters(filters: MetricFilters) {
+    metricFilters.value = filters;
+  }
   
   // お気に入り銘柄の追加
   function addToFavorites(stockCode: string) {
@@ -337,6 +378,8 @@ export function useCompanyData() {
     consecutiveGrowthYears,
     salesGrowthRatio,
     marketCapLimit,
+    metricFilters,
+    updateMetricFilters,
     // お気に入り関連
     favoriteStockCodes,
     addToFavorites,

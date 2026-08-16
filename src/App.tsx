@@ -3,6 +3,8 @@ import { useCompanyData } from './composables/useCompanyData';
 import FinancialComparisonTable from './components/FinancialComparisonTable';
 import PerformanceTable from './components/PerformanceTable';
 import SettingsModal from './components/SettingsModal';
+import MetricFilterModal from './components/MetricFilterModal';
+import type { MetricFilters } from './composables/useCompanyData';
 import type { CompanyData } from './types';
 
 export default defineComponent({
@@ -31,6 +33,8 @@ export default defineComponent({
       consecutiveGrowthYears,
       salesGrowthRatio,
       marketCapLimit,
+      metricFilters,
+      updateMetricFilters,
       favoriteStockCodes,
       toggleFavorite,
       clearFavorites,
@@ -48,6 +52,11 @@ export default defineComponent({
 
     const availableFiles = ref<string[]>(['range-companies.json']);
     const showSettingsModal = ref(false);
+    const showMetricFilterModal = ref(false);
+
+    const hasMetricFilters = () => Object.values(metricFilters.value).some(filter =>
+      filter.min !== null || filter.max !== null
+    );
 
      // 表示中の銘柄を保存する関数
      const handleSaveSelectedStocks = async () => {
@@ -150,6 +159,10 @@ export default defineComponent({
       updateGrowthSettings(years, ratio, marketCapLimitValue);
     };
 
+    const handleSaveMetricFilters = (filters: MetricFilters) => {
+      updateMetricFilters(filters);
+    };
+
     return () => (
       <div class="app">
         {loading.value && (
@@ -247,6 +260,14 @@ export default defineComponent({
                   {showFavoritesOnly.value ? '⭐ お気に入りのみ表示中' : `⭐ お気に入りのみ表示 (${favoriteStockCodes.value.size})`}
                 </button>
               )}
+
+              <button
+                class={`filter-button ${hasMetricFilters() ? 'active' : ''}`}
+                onClick={() => { showMetricFilterModal.value = true; }}
+                title="PER、PBR、配当利回りなどの範囲を指定して絞り込み"
+              >
+                {hasMetricFilters() ? '🔎 指標フィルタ適用中' : '🔎 指標フィルタ（PERなど）'}
+              </button>
               
               {/* 設定ボタン */}
               <button 
@@ -432,13 +453,16 @@ export default defineComponent({
           <div class="no-data">
             <h2>データが見つかりません</h2>
             <p>
-              {showFavoritesOnly.value ? 'お気に入りに登録された銘柄がありません。' :
+              {hasMetricFilters() ? '指定した指標条件を満たす企業がありません。' :
+               showFavoritesOnly.value ? 'お気に入りに登録された銘柄がありません。' :
                showTrendChangeOnly.value ? '200日移動平均線より株価が上にある銘柄がありません。履歴データが不足している可能性があります。' :
                showHighGrowthOnly.value ? '高成長企業の条件を満たす企業がありません。' : 
                '企業データを取得してください。'}
             </p>
             <div class="action-buttons">
-              {showFavoritesOnly.value ? (
+              {hasMetricFilters() ? (
+                <button onClick={() => { showMetricFilterModal.value = true; }}>指標条件を見直す</button>
+              ) : showFavoritesOnly.value ? (
                 <button onClick={toggleFavoritesFilter}>全企業を表示</button>
               ) : showTrendChangeOnly.value ? (
                 <button onClick={toggleTrendChangeFilter}>全企業を表示</button>
@@ -466,6 +490,12 @@ export default defineComponent({
           marketCapLimit={marketCapLimit.value}
           onClose={handleCloseSettings}
           onSave={handleSaveSettings}
+        />
+        <MetricFilterModal
+          isVisible={showMetricFilterModal.value}
+          filters={metricFilters.value}
+          onClose={() => { showMetricFilterModal.value = false; }}
+          onSave={handleSaveMetricFilters}
         />
       </div>
     );

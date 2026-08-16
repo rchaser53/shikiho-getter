@@ -425,6 +425,55 @@ body {
   padding: 24px;
 }
 
+.metric-filter-modal {
+  max-width: 680px;
+}
+
+.metric-filter-help {
+  margin-bottom: 18px;
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.metric-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metric-filter-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 110px 20px 110px;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-filter-row label {
+  color: #2c3e50;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.metric-filter-row input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.metric-filter-row input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.metric-filter-row span {
+  color: #6c757d;
+  text-align: center;
+}
+
 .setting-section {
   display: flex;
   flex-direction: column;
