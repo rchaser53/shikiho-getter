@@ -54,15 +54,22 @@ export function useCompanyData() {
 
   // 表示用の企業データ（フィルタ適用後）
   const displayCompanies = computed(() => {
-    if (showFavoritesOnly.value) {
-      return favoriteCompanies.value;
-    } else if (showTrendChangeOnly.value) {
-      return trendChangeCompanies.value;
-    } else if (showHighGrowthOnly.value) {
-      return highGrowthCompanies.value;
-    } else {
-      return successfulCompanies.value;
-    }
+    // 各フィルタは独立して適用し、複数有効時はAND条件で絞り込む。
+    return successfulCompanies.value.filter(company => {
+      if (showFavoritesOnly.value && !favoriteStockCodes.value.has(company.stockCode)) {
+        return false;
+      }
+
+      if (showTrendChangeOnly.value && !trendChangedStockCodes.value.includes(company.stockCode)) {
+        return false;
+      }
+
+      if (showHighGrowthOnly.value && !isHighGrowthCompany(company)) {
+        return false;
+      }
+
+      return true;
+    });
   });
   
   // データ読み込み（ファイル名指定可能）
@@ -183,30 +190,18 @@ export function useCompanyData() {
   // フィルタ切り替え関数
   function toggleHighGrowthFilter() {
     showHighGrowthOnly.value = !showHighGrowthOnly.value;
-    if (showHighGrowthOnly.value) {
-      showTrendChangeOnly.value = false; // 他のフィルタをオフ
-      showFavoritesOnly.value = false;
-    }
     console.log(`🔍 高成長企業フィルタ: ${showHighGrowthOnly.value ? 'ON' : 'OFF'}`);
   }
   
   // トレンド変化フィルタ切り替え関数
   function toggleTrendChangeFilter() {
     showTrendChangeOnly.value = !showTrendChangeOnly.value;
-    if (showTrendChangeOnly.value) {
-      showHighGrowthOnly.value = false; // 他のフィルタをオフ
-      showFavoritesOnly.value = false;
-    }
     console.log(`📈 200日線プラスフィルタ: ${showTrendChangeOnly.value ? 'ON' : 'OFF'}`);
   }
   
   // お気に入りフィルタ切り替え関数
   function toggleFavoritesFilter() {
     showFavoritesOnly.value = !showFavoritesOnly.value;
-    if (showFavoritesOnly.value) {
-      showHighGrowthOnly.value = false; // 他のフィルタをオフ
-      showTrendChangeOnly.value = false;
-    }
     console.log(`⭐ お気に入りフィルタ: ${showFavoritesOnly.value ? 'ON' : 'OFF'}`);
   }
   

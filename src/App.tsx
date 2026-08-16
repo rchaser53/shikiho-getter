@@ -188,7 +188,7 @@ export default defineComponent({
                     ))}
                   </select>
                   <small class="file-info">
-                    ({successfulCompanies.value.length}社のデータ
+                    ({displayCompanies.value.length}社を表示 / 全{successfulCompanies.value.length}社
                     {showFavoritesOnly.value && ` | ⭐お気に入り: ${favoriteCompanies.value.length}社でフィルタ中`}
                     {showHighGrowthOnly.value && ` | 高成長: ${highGrowthCompanies.value.length}社`}
                     {showTrendChangeOnly.value && ` | 200日線プラス: ${trendChangeCompanies.value.length}社`})
@@ -223,7 +223,7 @@ export default defineComponent({
               <button 
                 class={`filter-button ${showHighGrowthOnly.value ? 'active' : ''}`}
                 onClick={toggleHighGrowthFilter}
-                title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上${marketCapLimit.value ? `かつ時価総額${marketCapLimit.value}億円以下` : ''}の企業のみ表示`}
+                title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上${marketCapLimit.value ? `かつ時価総額${marketCapLimit.value}億円以下` : ''}。他の有効なフィルタとも組み合わせて表示`}
               >
                 {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍${marketCapLimit.value ? `/${marketCapLimit.value}億円以下` : ''})`}
               </button>
@@ -232,7 +232,7 @@ export default defineComponent({
               <button 
                 class={`filter-button ${showTrendChangeOnly.value ? 'active' : ''}`}
                 onClick={toggleTrendChangeFilter}
-                title="200日移動平均線より株価が上にある企業のみ表示（ratio_of_price_to_200days_ma > 0）"
+                title="200日移動平均線より株価が上にある企業のみ表示（他の有効なフィルタと組み合わせ可能）"
               >
                 {showTrendChangeOnly.value ? '📈 200日線プラス銘柄のみ' : '📊 200日線プラスフィルタ'}
               </button>
@@ -242,7 +242,7 @@ export default defineComponent({
                 <button 
                   class={`filter-button ${showFavoritesOnly.value ? 'active' : ''}`}
                   onClick={toggleFavoritesFilter}
-                  title="お気に入りに登録した銘柄のみ表示"
+                  title="お気に入りに登録した銘柄のみ表示（他の有効なフィルタと組み合わせ可能）"
                 >
                   {showFavoritesOnly.value ? '⭐ お気に入りのみ表示中' : `⭐ お気に入りのみ表示 (${favoriteStockCodes.value.size})`}
                 </button>
