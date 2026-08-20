@@ -232,42 +232,40 @@ export default defineComponent({
                 </button>
               )}
               
-              {/* 高成長企業フィルタ */}
-              <button 
-                class={`filter-button ${showHighGrowthOnly.value ? 'active' : ''}`}
-                onClick={toggleHighGrowthFilter}
-                title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上${marketCapLimit.value ? `かつ時価総額${marketCapLimit.value}億円以下` : ''}。他の有効なフィルタとも組み合わせて表示`}
-              >
-                {showHighGrowthOnly.value ? '🚀 高成長企業のみ' : `🔍 高成長企業フィルタ (${consecutiveGrowthYears.value}年/${salesGrowthRatio.value}倍${marketCapLimit.value ? `/${marketCapLimit.value}億円以下` : ''})`}
-              </button>
-              
-              {/* 200日線プラスフィルタ */}
-              <button 
-                class={`filter-button ${showTrendChangeOnly.value ? 'active' : ''}`}
-                onClick={toggleTrendChangeFilter}
-                title="200日移動平均線より株価が上にある企業のみ表示（他の有効なフィルタと組み合わせ可能）"
-              >
-                {showTrendChangeOnly.value ? '📈 200日線プラス銘柄のみ' : '📊 200日線プラスフィルタ'}
-              </button>
-              
-              {/* お気に入りフィルタ */}
-              {favoriteStockCodes.value.size > 0 && (
-                <button 
-                  class={`filter-button ${showFavoritesOnly.value ? 'active' : ''}`}
-                  onClick={toggleFavoritesFilter}
-                  title="お気に入りに登録した銘柄のみ表示（他の有効なフィルタと組み合わせ可能）"
+              {/* 絞り込み条件 */}
+              <div class="filter-group" aria-label="絞り込み条件">
+                <span class="filter-group-title">🔍 絞り込み条件</span>
+                <label
+                  class={`filter-checkbox ${showHighGrowthOnly.value ? 'active' : ''}`}
+                  title={`${consecutiveGrowthYears.value}年連続増収かつ売上高${salesGrowthRatio.value}倍以上${marketCapLimit.value ? `かつ時価総額${marketCapLimit.value}億円以下` : ''}`}
                 >
-                  {showFavoritesOnly.value ? '⭐ お気に入りのみ表示中' : `⭐ お気に入りのみ表示 (${favoriteStockCodes.value.size})`}
+                  <input type="checkbox" checked={showHighGrowthOnly.value} onChange={toggleHighGrowthFilter} />
+                  <span>🚀 高成長（{consecutiveGrowthYears.value}年/{salesGrowthRatio.value}倍{marketCapLimit.value ? `/${marketCapLimit.value}億円以下` : ''}）</span>
+                </label>
+                <label
+                  class={`filter-checkbox ${showTrendChangeOnly.value ? 'active' : ''}`}
+                  title="200日移動平均線より株価が上にある企業のみ表示"
+                >
+                  <input type="checkbox" checked={showTrendChangeOnly.value} onChange={toggleTrendChangeFilter} />
+                  <span>📈 200日線プラス</span>
+                </label>
+                {favoriteStockCodes.value.size > 0 && (
+                  <label
+                    class={`filter-checkbox ${showFavoritesOnly.value ? 'active' : ''}`}
+                    title="お気に入りに登録した銘柄のみ表示"
+                  >
+                    <input type="checkbox" checked={showFavoritesOnly.value} onChange={toggleFavoritesFilter} />
+                    <span>⭐ お気に入り（{favoriteStockCodes.value.size}）</span>
+                  </label>
+                )}
+                <button
+                  class={`metric-filter-button ${hasMetricFilters() ? 'active' : ''}`}
+                  onClick={() => { showMetricFilterModal.value = true; }}
+                  title="PER、PBR、配当利回りなどの範囲を指定して絞り込み"
+                >
+                  {hasMetricFilters() ? '🔎 指標条件を編集中' : '🔎 指標条件を追加'}
                 </button>
-              )}
-
-              <button
-                class={`filter-button ${hasMetricFilters() ? 'active' : ''}`}
-                onClick={() => { showMetricFilterModal.value = true; }}
-                title="PER、PBR、配当利回りなどの範囲を指定して絞り込み"
-              >
-                {hasMetricFilters() ? '🔎 指標フィルタ適用中' : '🔎 指標フィルタ（PERなど）'}
-              </button>
+              </div>
               
               {/* 設定ボタン */}
               <button 

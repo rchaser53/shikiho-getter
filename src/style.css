@@ -113,6 +113,79 @@ body {
   background: #e67e22;
 }
 
+/* 絞り込み条件 */
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-group-title {
+  color: #495057;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.filter-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-checkbox:hover {
+  border-color: #27ae60;
+  background: #f1f8f4;
+}
+
+.filter-checkbox.active {
+  border-color: #f39c12;
+  background: #fff4df;
+  color: #8a4b00;
+  font-weight: 600;
+}
+
+.filter-checkbox input {
+  width: 15px;
+  height: 15px;
+  accent-color: #27ae60;
+  cursor: pointer;
+}
+
+.metric-filter-button {
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid #adb5bd;
+  border-radius: 5px;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.metric-filter-button:hover,
+.metric-filter-button.active {
+  border-color: #6f42c1;
+  background: #f2ecff;
+  color: #563d7c;
+}
+
 /* 設定ボタン */
 .settings-button {
   background: #6c757d;
