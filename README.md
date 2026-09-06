@@ -107,6 +107,16 @@ npm run get-history-price -- --code 7080 --points 60 --end-date 2025-10-29
 
 ※ 既存の履歴JSONに `current_price` が含まれていない場合、株価は `null` になります（今後 `fetch-daily-history` で生成する履歴には `current_price` を含めます）。
 
+#### Kabutanニュース取得
+
+`config.json` の `companyIds` に登録した銘柄について、Kabutanのニュース一覧から日付・時刻・概要を取得します。前回取得時との差分も標準出力に表示されます。
+
+```bash
+npm run fetch-kabutan-news
+```
+
+結果は `output/kabutan-news/latest.json` と日付別ファイルに保存されます。
+
 **範囲取得の特徴：**
 - 📊 プログレスバー表示で進捗確認
 - ⚡ 最大10000社まで一度に取得可能

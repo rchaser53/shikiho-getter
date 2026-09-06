@@ -11,6 +11,7 @@
     "fetch-daily-history": "tsx src/scripts/fetch-daily-history.ts",
     "fetch-daily-history-quick": "tsx src/scripts/fetch-daily-history-quick.ts",
     "get-history-price": "tsx src/scripts/get-history-price.ts",
+    "fetch-kabutan-news": "tsx src/scripts/fetch-kabutan-news.ts",
     "api-server": "tsx src/scripts/save-selected-stocks-api.ts",
     "serve": "vite preview --port 3000",
     "start-all": "concurrently \"npm run api-server\" \"npm run serve\""
