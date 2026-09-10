@@ -109,7 +109,7 @@ npm run get-history-price -- --code 7080 --points 60 --end-date 2025-10-29
 
 #### Kabutanニュース取得
 
-`config.json` の `companyIds` に登録した銘柄について、Kabutanのニュース一覧から日付・時刻・概要を取得します。前回取得時との差分も標準出力に表示されます。
+`config.json` の `companyIds` に登録した銘柄について、Kabutanのニュース一覧から日付・時刻・概要・記事URLを取得します。前回取得時との差分も標準出力に表示され、新着ニュースには記事URLも表示されます。
 
 ```bash
 npm run fetch-kabutan-news

@@ -168,7 +168,7 @@ async function main(): Promise<void> {
   } else {
     console.log(`新しいニュース: ${newItems.length}件`);
     for (const item of newItems) {
-      console.log(`- ${item.companyId} ${item.date} ${item.time} ${item.summary}`);
+      console.log(`- ${item.companyId} ${item.date} ${item.time} ${item.summary} URL: ${item.url ?? 'URLなし'}`);
     }
   }
 }
